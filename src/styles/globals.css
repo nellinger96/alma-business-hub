@@ -1315,3 +1315,52 @@ td strong {
     font-size: 14px;
   }
 }
+
+/* Business-specific service cards */
+
+.service-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.service-card {
+  background: white;
+  border: 1px solid #dbe3ec;
+  border-radius: 12px;
+  min-height: 170px;
+  padding: 22px;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.service-card .category-icon {
+  margin: 0 0 12px;
+}
+
+.service-card span {
+  display: block;
+  color: #080b2b;
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.service-card p {
+  color: #5d7184;
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (max-width: 800px) {
+  .service-row {
+    grid-template-columns: 1fr;
+  }
+
+  .service-card {
+    min-height: auto;
+    padding: 18px;
+  }
+}

@@ -18,12 +18,12 @@ export function BusinessSelectPage({ onSelect, onAdmin }: Props) {
 
           <button onClick={() => onSelect('Alianza')}>
             <strong>Alianza</strong>
-            <span>Insurance services, prospects, policies, reports, documents, and tasks.</span>
+            <span>Tax services, document filing, customer paperwork, tasks, and follow-ups.</span>
           </button>
 
           <button onClick={() => onSelect('Petra Insurance')}>
             <strong>Petra Insurance</strong>
-            <span>Separate business dashboard for clients, policies, tasks, documents, and reports.</span>
+            <span>Life insurance, pre-need funeral services, client documents, and follow-ups.</span>
           </button>
         </div>
       </div>

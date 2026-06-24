@@ -6,12 +6,23 @@ import { DashboardPage } from './features/dashboard/DashboardPage'
 import { ReportsPage } from './features/reports/ReportsPage'
 import { PolicyFormPage } from './features/policies/PolicyFormPage'
 import { AdminDashboardPage } from './features/admin/AdminDashboardPage'
+import PetraHome from './pages/petra/PetraHome'
+import AlianzaHome from './pages/alianza/AlianzaHome'
 
 type Screen = 'login' | 'select-business' | 'dashboard' | 'reports' | 'policy-form' | 'admin'
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('login')
   const [activeBusiness, setActiveBusiness] = useState('Alianza')
+  const previewSite = new URLSearchParams(window.location.search).get('site')
+
+if (previewSite === 'petra') {
+  return <PetraHome />
+}
+
+if (previewSite === 'alianza') {
+  return <AlianzaHome />
+}
 
   if (screen === 'login') {
     return <LoginPage onLogin={() => setScreen('select-business')} />

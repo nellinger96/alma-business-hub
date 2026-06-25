@@ -7,75 +7,54 @@ import { ReportsPage } from './features/reports/ReportsPage'
 import { PolicyFormPage } from './features/policies/PolicyFormPage'
 import { AdminDashboardPage } from './features/admin/AdminDashboardPage'
 
+import AlianzaHome from './pages/alianza/AlianzaHome'
+import PetraHome from './pages/petra/PetraHome'
+
 type Screen = 'login' | 'select-business' | 'dashboard' | 'reports' | 'policy-form' | 'admin'
+type PublicSite = 'alianza' | 'petra' | null
 
-function getInitialWorkspace() {
+function getPublicSite(): PublicSite {
   const search = window.location.search.toLowerCase()
+  const href = window.location.href.toLowerCase()
 
-  if (search.includes('petra')) {
-    return {
-      screen: 'dashboard' as Screen,
-      business: 'Petra Insurance',
-      dashboardTab: 'home',
-      employeeName: 'Alma Admin'
-    }
+  if (
+    search.includes('=petra') ||
+    search.includes('petra') ||
+    href.includes('/petra')
+  ) {
+    return 'petra'
   }
 
-  if (search.includes('alianza')) {
-    return {
-      screen: 'dashboard' as Screen,
-      business: 'Alianza',
-      dashboardTab: 'home',
-      employeeName: 'Alma Admin'
-    }
+  if (
+    search.includes('=alianza') ||
+    search.includes('alianza') ||
+    href.includes('/alianza')
+  ) {
+    return 'alianza'
   }
 
-  if (search.includes('admin')) {
-    return {
-      screen: 'admin' as Screen,
-      business: 'Alianza',
-      dashboardTab: 'home',
-      employeeName: 'Alma Admin'
-    }
-  }
-
-  return {
-    screen: 'login' as Screen,
-    business: 'Alianza',
-    dashboardTab: 'home',
-    employeeName: 'Alma Admin'
-  }
-}
-
-function updateBusinessUrl(business: string) {
-  const businessParam = business === 'Petra Insurance' ? 'petra' : 'alianza'
-  window.history.replaceState(null, '', `/?business=${businessParam}`)
+  return null
 }
 
 export default function App() {
-  const initialWorkspace = getInitialWorkspace()
+  const publicSite = getPublicSite()
 
-  const [screen, setScreen] = useState<Screen>(initialWorkspace.screen)
-  const [activeBusiness, setActiveBusinessState] = useState(initialWorkspace.business)
-  const [dashboardTab, setDashboardTab] = useState(initialWorkspace.dashboardTab)
-  const [activeEmployeeName, setActiveEmployeeName] = useState(initialWorkspace.employeeName)
-
-  const setActiveBusiness = (business: string) => {
-    setActiveBusinessState(business)
-    updateBusinessUrl(business)
+  if (publicSite === 'alianza') {
+    return <AlianzaHome />
   }
+
+  if (publicSite === 'petra') {
+    return <PetraHome />
+  }
+
+  const [screen, setScreen] = useState<Screen>('login')
+  const [activeBusiness, setActiveBusiness] = useState('Alianza')
+  const [dashboardTab, setDashboardTab] = useState('home')
+  const [activeEmployeeName, setActiveEmployeeName] = useState('Alma Admin')
 
   const navigateTo = (nextScreen: Screen, nextDashboardTab?: string) => {
     if (nextDashboardTab) {
       setDashboardTab(nextDashboardTab)
-    }
-
-    if (nextScreen === 'admin') {
-      window.history.replaceState(null, '', '/?admin')
-    }
-
-    if (nextScreen === 'dashboard') {
-      updateBusinessUrl(activeBusiness)
     }
 
     setScreen(nextScreen)
@@ -85,13 +64,11 @@ export default function App() {
     setActiveEmployeeName(employeeName)
 
     if (business === 'Petra Insurance') {
-      setActiveBusinessState('Petra Insurance')
-      updateBusinessUrl('Petra Insurance')
+      setActiveBusiness('Petra Insurance')
     }
 
     if (business === 'Alianza') {
-      setActiveBusinessState('Alianza')
-      updateBusinessUrl('Alianza')
+      setActiveBusiness('Alianza')
     }
 
     setDashboardTab('home')
@@ -106,16 +83,12 @@ export default function App() {
     return (
       <BusinessSelectPage
         onSelect={(business) => {
-          setActiveBusinessState(business)
-          updateBusinessUrl(business)
+          setActiveBusiness(business)
           setActiveEmployeeName('Alma Admin')
           setDashboardTab('home')
           setScreen('dashboard')
         }}
-        onAdmin={() => {
-          window.history.replaceState(null, '', '/?admin')
-          setScreen('admin')
-        }}
+        onAdmin={() => setScreen('admin')}
       />
     )
   }
@@ -126,10 +99,7 @@ export default function App() {
       setActiveBusiness={setActiveBusiness}
       activeScreen={screen}
       navigateTo={navigateTo}
-      onLogout={() => {
-        window.history.replaceState(null, '', '/')
-        setScreen('login')
-      }}
+      onLogout={() => setScreen('login')}
     >
       {screen === 'admin' && <AdminDashboardPage onViewEmployee={viewEmployeeDashboard} />}
       {screen === 'dashboard' && (

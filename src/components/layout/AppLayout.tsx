@@ -15,23 +15,30 @@ import {
 import { Sidebar } from './Sidebar'
 import { RightPanel } from './RightPanel'
 import { MobileBottomNav } from './MobileBottomNav'
+import type { DemoUser } from '../../types/demoUser'
 
 type Props = {
   children: ReactNode
   activeBusiness: string
   setActiveBusiness: (business: string) => void
+  allowedBusinesses: string[]
   activeScreen: string
   navigateTo: (screen: any, dashboardTab?: string) => void
   onLogout: () => void
+  activeUser: DemoUser
+  canAccessAdmin: boolean
 }
 
 export function AppLayout({
   children,
   activeBusiness,
   setActiveBusiness,
+  allowedBusinesses,
   activeScreen,
   navigateTo,
-  onLogout
+  onLogout,
+  activeUser,
+  canAccessAdmin
 }: Props) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -56,7 +63,7 @@ export function AppLayout({
             <Users size={23} />
           </button>
 
-          <button className="icon-button desktop-only" onClick={() => navigateTo('dashboard', 'tasks')}>
+          <button className="icon-button desktop-only" onClick={() => navigateTo('dashboard', 'assigned-leads')}>
             <ListChecks size={23} />
           </button>
 
@@ -73,7 +80,7 @@ export function AppLayout({
         <div className="brand-mark">Alma Hub</div>
 
         <div className="topbar-right">
-          <span className="demo-badge desktop-only">Demo Mode</span>
+          <span className="demo-badge desktop-only">{activeUser.roleLabel}</span>
 
           <div className="quick-search desktop-only">
             <input placeholder="Quick Search..." />
@@ -86,12 +93,14 @@ export function AppLayout({
             className="business-switcher desktop-only"
             value={activeBusiness}
             onChange={(e) => setActiveBusiness(e.target.value)}
+            disabled={allowedBusinesses.length === 1}
           >
-            <option>Alianza</option>
-            <option>Petra Insurance</option>
+            {allowedBusinesses.map((business) => (
+              <option key={business}>{business}</option>
+            ))}
           </select>
 
-          <button className="icon-button notification desktop-only" onClick={() => navigateTo('dashboard', 'clients')}>
+          <button className="icon-button notification desktop-only" onClick={() => navigateTo('dashboard', 'assigned-leads')}>
             <Users size={23} />
             <span>3</span>
           </button>
@@ -115,9 +124,11 @@ export function AppLayout({
         <select
           value={activeBusiness}
           onChange={(e) => setActiveBusiness(e.target.value)}
+          disabled={allowedBusinesses.length === 1}
         >
-          <option>Alianza</option>
-          <option>Petra Insurance</option>
+          {allowedBusinesses.map((business) => (
+            <option key={business}>{business}</option>
+          ))}
         </select>
 
         <div className="mobile-search">
@@ -127,7 +138,12 @@ export function AppLayout({
       </div>
 
       <div className="workspace">
-        <Sidebar activeScreen={activeScreen} navigateTo={navigateTo} />
+        <Sidebar
+          activeScreen={activeScreen}
+          navigateTo={navigateTo}
+          activeUser={activeUser}
+          canAccessAdmin={canAccessAdmin}
+        />
 
         <main className="main-content">
           {children}
@@ -152,7 +168,12 @@ export function AppLayout({
               </button>
             </div>
 
-            <Sidebar activeScreen={activeScreen} navigateTo={handleMobileNavigate} />
+            <Sidebar
+              activeScreen={activeScreen}
+              navigateTo={handleMobileNavigate}
+              activeUser={activeUser}
+              canAccessAdmin={canAccessAdmin}
+            />
           </div>
         </div>
       )}
@@ -161,6 +182,7 @@ export function AppLayout({
         activeScreen={activeScreen}
         navigateTo={navigateTo}
         onOpenMenu={() => setMobileMenuOpen(true)}
+        canAccessAdmin={canAccessAdmin}
       />
     </div>
   )

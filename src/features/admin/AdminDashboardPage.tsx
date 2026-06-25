@@ -9,24 +9,38 @@
   DollarSign,
   Eye,
   FileText,
+  MailPlus,
   Medal,
-  MessageSquareText,
   ShieldCheck,
   Trophy,
   Users
 } from 'lucide-react'
-import { useState } from 'react'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import { Tabs } from '../../components/ui/Tabs'
+import { LeadProfileModal } from './components/LeadProfileModal'
+import type { WebsiteLead } from '../../types/websiteLead'
 
 type Props = {
   onViewEmployee: (employeeName: string, business: string) => void
+  websiteLeads: WebsiteLead[]
+  setWebsiteLeads: Dispatch<SetStateAction<WebsiteLead[]>>
 }
 
-export function AdminDashboardPage({ onViewEmployee }: Props) {
+type EmployeeRow = {
+  name: string
+  role: string
+  business: 'Alianza' | 'Petra Insurance' | 'All Businesses'
+  sales: string
+  clients: number
+}
+
+export function AdminDashboardPage({ onViewEmployee, websiteLeads, setWebsiteLeads }: Props) {
   const [activeTab, setActiveTab] = useState('overview')
+  const [selectedLead, setSelectedLead] = useState<WebsiteLead | null>(null)
 
   const tabs = [
     { id: 'overview', label: 'Overview' },
+    { id: 'website-leads', label: 'Website Leads' },
     { id: 'sales', label: 'Sales' },
     { id: 'competitions', label: 'Competitions' },
     { id: 'employees', label: 'Employees' },
@@ -35,7 +49,7 @@ export function AdminDashboardPage({ onViewEmployee }: Props) {
     { id: 'activity', label: 'Activity' }
   ]
 
-  const employeeRows = [
+  const employeeRows: EmployeeRow[] = [
     { name: 'Alma Mora', role: 'Super Admin', business: 'All Businesses', sales: '$18,400', clients: 42 },
     { name: 'Nelly Lopez', role: 'Admin', business: 'Alianza', sales: '$7,850', clients: 31 },
     { name: 'Carolina Medina', role: 'Employee', business: 'Alianza', sales: '$5,200', clients: 24 },
@@ -49,11 +63,75 @@ export function AdminDashboardPage({ onViewEmployee }: Props) {
     { business: 'Petra Insurance', service: 'Pre-Need Funeral Services', employee: 'Alma Mora', amount: '$2,500', status: 'Payment Plan', date: 'Yesterday' }
   ]
 
+  const leadStats = useMemo(() => {
+    return {
+      total: websiteLeads.length,
+      new: websiteLeads.filter((lead) => lead.status === 'New').length,
+      unassigned: websiteLeads.filter((lead) => lead.assignedTo === 'Unassigned').length,
+      converted: websiteLeads.filter((lead) => lead.status === 'Converted').length
+    }
+  }, [websiteLeads])
+
+  const assignLead = (leadId: string, employeeName: string) => {
+    const nextStatus = employeeName === 'Unassigned' ? 'New' : 'Assigned'
+
+    setWebsiteLeads((currentLeads) =>
+      currentLeads.map((lead) =>
+        lead.id === leadId
+          ? {
+              ...lead,
+              assignedTo: employeeName,
+              status: nextStatus
+            }
+          : lead
+      )
+    )
+
+    setSelectedLead((currentLead) =>
+      currentLead && currentLead.id === leadId
+        ? {
+            ...currentLead,
+            assignedTo: employeeName,
+            status: nextStatus
+          }
+        : currentLead
+    )
+  }
+
+  const updateLeadStatus = (leadId: string, status: WebsiteLead['status']) => {
+    setWebsiteLeads((currentLeads) =>
+      currentLeads.map((lead) =>
+        lead.id === leadId
+          ? {
+              ...lead,
+              status
+            }
+          : lead
+      )
+    )
+
+    setSelectedLead((currentLead) =>
+      currentLead && currentLead.id === leadId
+        ? {
+            ...currentLead,
+            status
+          }
+        : currentLead
+    )
+  }
+
+  const getStatusClass = (status: WebsiteLead['status']) => {
+    if (status === 'Converted') return 'status-pill active'
+    if (status === 'New') return 'status-pill new'
+    if (status === 'Lost') return 'status-pill lost'
+    return 'status-pill pending'
+  }
+
   return (
     <div>
       <div className="page-heading">
         <h1>Alma Admin Hub</h1>
-        <p>Owner dashboard for sales, employees, payment plans, reports, and both businesses.</p>
+        <p>Owner dashboard for leads, sales, employees, payment plans, reports, and both businesses.</p>
       </div>
 
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
@@ -69,6 +147,13 @@ export function AdminDashboardPage({ onViewEmployee }: Props) {
             </div>
 
             <div className="admin-stat-card">
+              <MailPlus />
+              <span>Website Leads</span>
+              <strong>{leadStats.total}</strong>
+              <small>{leadStats.unassigned} unassigned</small>
+            </div>
+
+            <div className="admin-stat-card">
               <DollarSign />
               <span>Total Sales</span>
               <strong>$38.3k</strong>
@@ -78,19 +163,19 @@ export function AdminDashboardPage({ onViewEmployee }: Props) {
             <div className="admin-stat-card">
               <Users />
               <span>Employees</span>
-              <strong>18</strong>
-              <small>Across both businesses</small>
-            </div>
-
-            <div className="admin-stat-card">
-              <ClipboardList />
-              <span>Open Tasks</span>
-              <strong>24</strong>
-              <small>Follow-ups and reminders</small>
+              <strong>25</strong>
+              <small>5 Alianza + 20 Petra</small>
             </div>
           </section>
 
           <section className="quick-card-grid">
+            <div className="quick-card">
+              <MailPlus size={38} />
+              <h3>Website Leads Inbox</h3>
+              <p>View new quote/help requests from Alianza and Petra websites, then assign them to employees.</p>
+              <button className="teal-button" onClick={() => setActiveTab('website-leads')}>Open Leads</button>
+            </div>
+
             <div className="quick-card">
               <Trophy size={38} />
               <h3>Sales Contest</h3>
@@ -101,15 +186,95 @@ export function AdminDashboardPage({ onViewEmployee }: Props) {
             <div className="quick-card">
               <Eye size={38} />
               <h3>View Employee Dashboards</h3>
-              <p>Open an employee dashboard to see their clients, tasks, sales, and reports.</p>
+              <p>Open employee dashboards to see assigned leads, clients, tasks, sales, and reports.</p>
               <button className="teal-button" onClick={() => setActiveTab('employees')}>View Employees</button>
             </div>
+          </section>
+        </>
+      )}
 
-            <div className="quick-card">
-              <MessageSquareText size={38} />
-              <h3>Client Messaging</h3>
-              <p>Birthday messages, promo coupons, service reminders, and follow-ups.</p>
-              <button className="teal-button">Open Messages</button>
+      {activeTab === 'website-leads' && (
+        <>
+          <section className="admin-stat-grid">
+            <div className="admin-stat-card">
+              <MailPlus />
+              <span>Total Leads</span>
+              <strong>{leadStats.total}</strong>
+              <small>From public websites</small>
+            </div>
+
+            <div className="admin-stat-card">
+              <AlertCircle />
+              <span>New Leads</span>
+              <strong>{leadStats.new}</strong>
+              <small>Need review</small>
+            </div>
+
+            <div className="admin-stat-card">
+              <Users />
+              <span>Unassigned</span>
+              <strong>{leadStats.unassigned}</strong>
+              <small>Need employee assignment</small>
+            </div>
+
+            <div className="admin-stat-card">
+              <ShieldCheck />
+              <span>Converted</span>
+              <strong>{leadStats.converted}</strong>
+              <small>Turned into clients</small>
+            </div>
+          </section>
+
+          <section className="table-panel admin-table">
+            <h3>Website Leads Inbox</h3>
+
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Lead</th>
+                    <th>Business</th>
+                    <th>Service</th>
+                    <th>Source</th>
+                    <th>Status</th>
+                    <th>Assigned To</th>
+                    <th>Created</th>
+                    <th>Open</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {websiteLeads.map((lead) => (
+                    <tr key={lead.id}>
+                      <td>
+                        <strong>{lead.id}</strong>
+                        <br />
+                        {lead.fullName}
+                        <br />
+                        <small>{lead.phone}</small>
+                      </td>
+                      <td>{lead.business}</td>
+                      <td>{lead.service}</td>
+                      <td>{lead.source}</td>
+                      <td>
+                        <span className={getStatusClass(lead.status)}>
+                          {lead.status}
+                        </span>
+                      </td>
+                      <td>{lead.assignedTo}</td>
+                      <td>{lead.createdAt}</td>
+                      <td>
+                        <button
+                          className="small-action-button"
+                          onClick={() => setSelectedLead(lead)}
+                        >
+                          Open
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </section>
         </>
@@ -267,6 +432,19 @@ export function AdminDashboardPage({ onViewEmployee }: Props) {
           <h2>Activity Logs</h2>
           <p>This will show employee actions, client updates, payment plan changes, document uploads, and completed sales.</p>
         </section>
+      )}
+
+      {selectedLead && (
+        <LeadProfileModal
+          lead={selectedLead}
+          employees={employeeRows.map((employee) => ({
+            name: employee.name,
+            business: employee.business
+          }))}
+          onClose={() => setSelectedLead(null)}
+          onAssign={assignLead}
+          onStatusChange={updateLeadStatus}
+        />
       )}
     </div>
   )

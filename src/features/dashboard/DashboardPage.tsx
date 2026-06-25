@@ -10,27 +10,50 @@
   Handshake,
   HeartPulse,
   HelpCircle,
+  Inbox,
   Landmark,
   MessageSquareText,
   NotebookText,
+  Search,
   ShieldCheck,
   Trophy,
   Users,
   X
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react'
 import { Tabs } from '../../components/ui/Tabs'
+import { ClientProfileModal } from './components/ClientProfileModal'
+import type { WebsiteLead } from '../../types/websiteLead'
 
 type Props = {
   activeBusiness: string
   activeEmployeeName: string
   initialTab: string
+  websiteLeads: WebsiteLead[]
+  setWebsiteLeads: Dispatch<SetStateAction<WebsiteLead[]>>
 }
 
-export function DashboardPage({ activeBusiness, activeEmployeeName, initialTab }: Props) {
+type Client = {
+  id: string
+  name: string
+  phone: string
+  service: string
+  status: string
+  birthday: string
+}
+
+export function DashboardPage({
+  activeBusiness,
+  activeEmployeeName,
+  initialTab,
+  websiteLeads,
+  setWebsiteLeads
+}: Props) {
   const [activeTab, setActiveTab] = useState(initialTab || 'home')
   const [completedTasks, setCompletedTasks] = useState<string[]>([])
   const [messagePreview, setMessagePreview] = useState<{ title: string; body: string } | null>(null)
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null)
+  const [clientSearch, setClientSearch] = useState('')
   const [noteText, setNoteText] = useState('')
   const [notes, setNotes] = useState<string[]>(['Called client. Waiting for missing documents.'])
   const [saleAmount, setSaleAmount] = useState('1200')
@@ -42,6 +65,14 @@ export function DashboardPage({ activeBusiness, activeEmployeeName, initialTab }
   }, [initialTab])
 
   const isPetra = activeBusiness === 'Petra Insurance'
+  const isAlmaView = activeEmployeeName === 'Alma Admin' || activeEmployeeName === 'Alma Mora'
+
+  const assignedLeads = websiteLeads.filter((lead) => {
+    const belongsToBusiness = lead.business === activeBusiness
+    const belongsToEmployee = lead.assignedTo === activeEmployeeName
+
+    return belongsToBusiness && (belongsToEmployee || isAlmaView)
+  })
 
   const monthlyPayment = useMemo(() => {
     const total = Number(saleAmount) || 0
@@ -53,6 +84,7 @@ export function DashboardPage({ activeBusiness, activeEmployeeName, initialTab }
 
   const tabs = [
     { id: 'home', label: 'My Dashboard' },
+    { id: 'assigned-leads', label: 'Assigned Leads' },
     { id: 'clients', label: isPetra ? 'My Clients' : 'My Customers' },
     { id: 'sales', label: 'Sales' },
     { id: 'payments', label: 'Payment Plans' },
@@ -73,17 +105,31 @@ export function DashboardPage({ activeBusiness, activeEmployeeName, initialTab }
         { label: 'Document Filing', icon: FileCheck2, description: 'Manage document filing customers, paperwork, and completion status.' }
       ]
 
-  const clients = isPetra
+  const clients: Client[] = isPetra
     ? [
         { id: 'P-1001', name: 'Maria Gonzalez', phone: '(714) 555-1822', service: 'Life Insurance', status: 'Needs Follow-up', birthday: 'June 28' },
         { id: 'P-1002', name: 'Jose Ramirez', phone: '(909) 555-4410', service: 'Pre-Need Funeral Services', status: 'Payment Plan', birthday: 'July 2' },
-        { id: 'P-1003', name: 'Ana Martinez', phone: '(951) 555-9033', service: 'Life Insurance', status: 'Quote Review', birthday: 'July 10' }
+        { id: 'P-1003', name: 'Ana Martinez', phone: '(951) 555-9033', service: 'Life Insurance', status: 'Quote Review', birthday: 'July 10' },
+        { id: 'P-1004', name: 'Rosa Flores', phone: '(626) 555-0198', service: 'Pre-Need Funeral Services', status: 'Appointment Scheduled', birthday: 'July 15' }
       ]
     : [
         { id: 'A-2001', name: 'Luis Hernandez', phone: '(714) 555-2290', service: 'Tax Services', status: 'Missing W-2', birthday: 'June 27' },
         { id: 'A-2002', name: 'Carmen Lopez', phone: '(909) 555-7001', service: 'Document Filing', status: 'In Progress', birthday: 'July 4' },
-        { id: 'A-2003', name: 'Miguel Torres', phone: '(951) 555-1188', service: 'Tax Services', status: 'Ready to File', birthday: 'July 12' }
+        { id: 'A-2003', name: 'Miguel Torres', phone: '(951) 555-1188', service: 'Tax Services', status: 'Ready to File', birthday: 'July 12' },
+        { id: 'A-2004', name: 'Sofia Ramirez', phone: '(626) 555-4031', service: 'Document Filing', status: 'Needs Signature', birthday: 'July 18' }
       ]
+
+  const filteredClients = clients.filter((client) => {
+    const search = clientSearch.toLowerCase()
+
+    return (
+      client.name.toLowerCase().includes(search) ||
+      client.phone.toLowerCase().includes(search) ||
+      client.service.toLowerCase().includes(search) ||
+      client.status.toLowerCase().includes(search) ||
+      client.id.toLowerCase().includes(search)
+    )
+  })
 
   const tasks = isPetra
     ? [
@@ -107,10 +153,37 @@ export function DashboardPage({ activeBusiness, activeEmployeeName, initialTab }
     }
   }
 
+  const updateLeadStatus = (leadId: string, status: WebsiteLead['status']) => {
+    setWebsiteLeads((currentLeads) =>
+      currentLeads.map((lead) =>
+        lead.id === leadId
+          ? {
+              ...lead,
+              status
+            }
+          : lead
+      )
+    )
+  }
+
+  const getStatusClass = (status: WebsiteLead['status']) => {
+    if (status === 'Converted') return 'status-pill active'
+    if (status === 'New') return 'status-pill new'
+    if (status === 'Lost') return 'status-pill lost'
+    return 'status-pill pending'
+  }
+
   const openBirthdayText = (clientName: string) => {
     setMessagePreview({
       title: `Birthday text to ${clientName}`,
       body: `Hi ${clientName}, happy birthday from ${activeBusiness}! We hope you have a blessed and beautiful day. Thank you for trusting our team.`
+    })
+  }
+
+  const openLeadText = (lead: WebsiteLead) => {
+    setMessagePreview({
+      title: `Follow-up text to ${lead.fullName}`,
+      body: `Hi ${lead.fullName}, this is ${activeEmployeeName} from ${activeBusiness}. Thank you for requesting information about ${lead.service}. I wanted to follow up and see when would be a good time to help you.`
     })
   }
 
@@ -135,7 +208,7 @@ export function DashboardPage({ activeBusiness, activeEmployeeName, initialTab }
       <div className="page-heading">
         <h1>{activeEmployeeName} Dashboard</h1>
         <p>
-          {activeBusiness} workspace for clients, alerts, payment plans, services, sales contests, messages, notes, and reports.
+          {activeBusiness} workspace for assigned leads, clients, alerts, payment plans, services, sales contests, messages, notes, and reports.
         </p>
       </div>
 
@@ -144,6 +217,12 @@ export function DashboardPage({ activeBusiness, activeEmployeeName, initialTab }
       {activeTab === 'home' && (
         <>
           <section className="dashboard-stat-grid">
+            <div className="dashboard-stat-card">
+              <Inbox />
+              <span>Assigned Leads</span>
+              <strong>{assignedLeads.length}</strong>
+            </div>
+
             <div className="dashboard-stat-card">
               <Users />
               <span>{isPetra ? 'My Clients' : 'My Customers'}</span>
@@ -154,12 +233,6 @@ export function DashboardPage({ activeBusiness, activeEmployeeName, initialTab }
               <Handshake />
               <span>My Sales</span>
               <strong>{isPetra ? '$6.9k' : '$7.8k'}</strong>
-            </div>
-
-            <div className="dashboard-stat-card">
-              <AlertCircle />
-              <span>Alerts</span>
-              <strong>6</strong>
             </div>
 
             <div className="dashboard-stat-card">
@@ -206,9 +279,97 @@ export function DashboardPage({ activeBusiness, activeEmployeeName, initialTab }
         </>
       )}
 
+      {activeTab === 'assigned-leads' && (
+        <section className="table-panel admin-table">
+          <div className="directory-header">
+            <div>
+              <h3>My Assigned Leads</h3>
+              <p>
+                {isAlmaView
+                  ? 'Alma/admin preview: showing all leads for this selected business.'
+                  : 'Employee preview: showing only leads assigned to this employee.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Lead</th>
+                  <th>Service</th>
+                  <th>Status</th>
+                  <th>Assigned To</th>
+                  <th>Source</th>
+                  <th>Text</th>
+                  <th>Contacted</th>
+                  <th>Convert</th>
+                </tr>
+              </thead>
+              <tbody>
+                {assignedLeads.map((lead) => (
+                  <tr key={lead.id}>
+                    <td>
+                      <strong>{lead.id}</strong>
+                      <br />
+                      {lead.fullName}
+                      <br />
+                      <small>{lead.phone}</small>
+                    </td>
+                    <td>{lead.service}</td>
+                    <td>
+                      <span className={getStatusClass(lead.status)}>
+                        {lead.status}
+                      </span>
+                    </td>
+                    <td>{lead.assignedTo}</td>
+                    <td>{lead.source}</td>
+                    <td>
+                      <button className="small-action-button" onClick={() => openLeadText(lead)}>
+                        Text
+                      </button>
+                    </td>
+                    <td>
+                      <button className="small-action-button secondary-small" onClick={() => updateLeadStatus(lead.id, 'Contacted')}>
+                        Contacted
+                      </button>
+                    </td>
+                    <td>
+                      <button className="small-action-button" onClick={() => updateLeadStatus(lead.id, 'Converted')}>
+                        Convert
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+
+                {assignedLeads.length === 0 && (
+                  <tr>
+                    <td colSpan={8}>No assigned leads yet. Assign one from Alma Admin Hub → Website Leads.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       {activeTab === 'clients' && (
         <section className="table-panel admin-table">
-          <h3>{isPetra ? 'My Client Directory' : 'My Customer Directory'}</h3>
+          <div className="directory-header">
+            <div>
+              <h3>{isPetra ? 'My Client Directory' : 'My Customer Directory'}</h3>
+              <p>Search, open profiles, send texts, review payment plans, and track follow-ups.</p>
+            </div>
+
+            <div className="directory-search">
+              <Search size={18} />
+              <input
+                value={clientSearch}
+                onChange={(e) => setClientSearch(e.target.value)}
+                placeholder="Search name, phone, service, status..."
+              />
+            </div>
+          </div>
 
           <div className="table-scroll">
             <table>
@@ -219,28 +380,42 @@ export function DashboardPage({ activeBusiness, activeEmployeeName, initialTab }
                   <th>Service</th>
                   <th>Status</th>
                   <th>Birthday</th>
+                  <th>Profile</th>
                   <th>Text</th>
                 </tr>
               </thead>
               <tbody>
-                {clients.map((client) => (
+                {filteredClients.map((client) => (
                   <tr key={client.id}>
                     <td>
-                      <strong>{client.id}</strong>
-                      <br />
-                      {client.name}
+                      <button className="link-button" onClick={() => setSelectedClient(client)}>
+                        <strong>{client.id}</strong>
+                        <br />
+                        {client.name}
+                      </button>
                     </td>
                     <td>{client.phone}</td>
                     <td>{client.service}</td>
                     <td>{client.status}</td>
                     <td>{client.birthday}</td>
                     <td>
-                      <button className="small-action-button" onClick={() => openBirthdayText(client.name)}>
+                      <button className="small-action-button" onClick={() => setSelectedClient(client)}>
+                        Open
+                      </button>
+                    </td>
+                    <td>
+                      <button className="small-action-button secondary-small" onClick={() => openBirthdayText(client.name)}>
                         Text
                       </button>
                     </td>
                   </tr>
                 ))}
+
+                {filteredClients.length === 0 && (
+                  <tr>
+                    <td colSpan={7}>No clients found in this demo search.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -439,6 +614,17 @@ export function DashboardPage({ activeBusiness, activeEmployeeName, initialTab }
             <button className="teal-button">View Contest</button>
           </div>
         </section>
+      )}
+
+      {selectedClient && (
+        <ClientProfileModal
+          client={selectedClient}
+          activeBusiness={activeBusiness}
+          isPetra={isPetra}
+          onClose={() => setSelectedClient(null)}
+          onBirthdayText={openBirthdayText}
+          onPromoText={openPromoText}
+        />
       )}
 
       {messagePreview && (

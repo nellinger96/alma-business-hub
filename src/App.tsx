@@ -15,20 +15,26 @@ type PublicSite = 'alianza' | 'petra' | null
 
 function getPublicSite(): PublicSite {
   const search = window.location.search.toLowerCase()
-  const href = window.location.href.toLowerCase()
+  const pathname = window.location.pathname.toLowerCase().replace(/\/$/, '')
+  const params = new URLSearchParams(window.location.search)
+
+  const site = params.get('site')?.toLowerCase()
+  const business = params.get('business')?.toLowerCase()
 
   if (
-    search.includes('=petra') ||
-    search.includes('petra') ||
-    href.includes('/petra')
+    search === '?=petra' ||
+    site === 'petra' ||
+    business === 'petra' ||
+    pathname === '/petra'
   ) {
     return 'petra'
   }
 
   if (
-    search.includes('=alianza') ||
-    search.includes('alianza') ||
-    href.includes('/alianza')
+    search === '?=alianza' ||
+    site === 'alianza' ||
+    business === 'alianza' ||
+    pathname === '/alianza'
   ) {
     return 'alianza'
   }

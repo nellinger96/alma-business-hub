@@ -21,7 +21,7 @@ type Props = {
   activeBusiness: string
   setActiveBusiness: (business: string) => void
   activeScreen: string
-  setScreen: (screen: any) => void
+  navigateTo: (screen: any, dashboardTab?: string) => void
   onLogout: () => void
 }
 
@@ -30,13 +30,13 @@ export function AppLayout({
   activeBusiness,
   setActiveBusiness,
   activeScreen,
-  setScreen,
+  navigateTo,
   onLogout
 }: Props) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  const handleMobileNavigate = (screen: any) => {
-    setScreen(screen)
+  const handleMobileNavigate = (screen: any, dashboardTab?: string) => {
+    navigateTo(screen, dashboardTab)
     setMobileMenuOpen(false)
   }
 
@@ -48,19 +48,19 @@ export function AppLayout({
             <Menu size={24} />
           </button>
 
-          <button className="icon-button desktop-only">
+          <button className="icon-button desktop-only" onClick={() => navigateTo('reports')}>
             <BarChart3 size={23} />
           </button>
 
-          <button className="icon-button desktop-only">
+          <button className="icon-button desktop-only" onClick={() => navigateTo('dashboard', 'clients')}>
             <Users size={23} />
           </button>
 
-          <button className="icon-button desktop-only">
+          <button className="icon-button desktop-only" onClick={() => navigateTo('dashboard', 'tasks')}>
             <ListChecks size={23} />
           </button>
 
-          <button className="icon-button desktop-only">
+          <button className="icon-button desktop-only" onClick={() => navigateTo('dashboard', 'policies')}>
             <FileText size={23} />
           </button>
 
@@ -73,6 +73,8 @@ export function AppLayout({
         <div className="brand-mark">Alma Hub</div>
 
         <div className="topbar-right">
+          <span className="demo-badge desktop-only">Demo Mode</span>
+
           <div className="quick-search desktop-only">
             <input placeholder="Quick Search..." />
             <button>
@@ -89,18 +91,18 @@ export function AppLayout({
             <option>Petra Insurance</option>
           </select>
 
-          <button className="icon-button notification desktop-only">
+          <button className="icon-button notification desktop-only" onClick={() => navigateTo('dashboard', 'clients')}>
             <Users size={23} />
             <span>3</span>
           </button>
 
-          <button className="icon-button desktop-only">
+          <button className="icon-button desktop-only" onClick={() => navigateTo('dashboard', 'calendar')}>
             <CalendarDays size={23} />
           </button>
 
-          <button className="icon-button notification desktop-only">
+          <button className="icon-button notification desktop-only" onClick={() => navigateTo('dashboard', 'home')}>
             <Bell size={23} />
-            <span>29</span>
+            <span>6</span>
           </button>
 
           <button className="icon-button" onClick={onLogout} aria-label="Log out">
@@ -125,7 +127,7 @@ export function AppLayout({
       </div>
 
       <div className="workspace">
-        <Sidebar activeScreen={activeScreen} setScreen={setScreen} />
+        <Sidebar activeScreen={activeScreen} navigateTo={navigateTo} />
 
         <main className="main-content">
           {children}
@@ -150,14 +152,14 @@ export function AppLayout({
               </button>
             </div>
 
-            <Sidebar activeScreen={activeScreen} setScreen={handleMobileNavigate} />
+            <Sidebar activeScreen={activeScreen} navigateTo={handleMobileNavigate} />
           </div>
         </div>
       )}
 
       <MobileBottomNav
         activeScreen={activeScreen}
-        setScreen={setScreen}
+        navigateTo={navigateTo}
         onOpenMenu={() => setMobileMenuOpen(true)}
       />
     </div>

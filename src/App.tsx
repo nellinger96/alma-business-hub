@@ -6,23 +6,37 @@ import { DashboardPage } from './features/dashboard/DashboardPage'
 import { ReportsPage } from './features/reports/ReportsPage'
 import { PolicyFormPage } from './features/policies/PolicyFormPage'
 import { AdminDashboardPage } from './features/admin/AdminDashboardPage'
-import PetraHome from './pages/petra/PetraHome'
-import AlianzaHome from './pages/alianza/AlianzaHome'
 
 type Screen = 'login' | 'select-business' | 'dashboard' | 'reports' | 'policy-form' | 'admin'
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('login')
   const [activeBusiness, setActiveBusiness] = useState('Alianza')
-  const previewSite = new URLSearchParams(window.location.search).get('site')
+  const [dashboardTab, setDashboardTab] = useState('home')
+  const [activeEmployeeName, setActiveEmployeeName] = useState('Alma Admin')
 
-if (previewSite === 'petra') {
-  return <PetraHome />
-}
+  const navigateTo = (nextScreen: Screen, nextDashboardTab?: string) => {
+    if (nextDashboardTab) {
+      setDashboardTab(nextDashboardTab)
+    }
 
-if (previewSite === 'alianza') {
-  return <AlianzaHome />
-}
+    setScreen(nextScreen)
+  }
+
+  const viewEmployeeDashboard = (employeeName: string, business: string) => {
+    setActiveEmployeeName(employeeName)
+
+    if (business === 'Petra Insurance') {
+      setActiveBusiness('Petra Insurance')
+    }
+
+    if (business === 'Alianza') {
+      setActiveBusiness('Alianza')
+    }
+
+    setDashboardTab('home')
+    setScreen('dashboard')
+  }
 
   if (screen === 'login') {
     return <LoginPage onLogin={() => setScreen('select-business')} />
@@ -33,6 +47,8 @@ if (previewSite === 'alianza') {
       <BusinessSelectPage
         onSelect={(business) => {
           setActiveBusiness(business)
+          setActiveEmployeeName('Alma Admin')
+          setDashboardTab('home')
           setScreen('dashboard')
         }}
         onAdmin={() => setScreen('admin')}
@@ -45,11 +61,17 @@ if (previewSite === 'alianza') {
       activeBusiness={activeBusiness}
       setActiveBusiness={setActiveBusiness}
       activeScreen={screen}
-      setScreen={setScreen}
+      navigateTo={navigateTo}
       onLogout={() => setScreen('login')}
     >
-      {screen === 'admin' && <AdminDashboardPage />}
-      {screen === 'dashboard' && <DashboardPage activeBusiness={activeBusiness} />}
+      {screen === 'admin' && <AdminDashboardPage onViewEmployee={viewEmployeeDashboard} />}
+      {screen === 'dashboard' && (
+        <DashboardPage
+          activeBusiness={activeBusiness}
+          activeEmployeeName={activeEmployeeName}
+          initialTab={dashboardTab}
+        />
+      )}
       {screen === 'reports' && <ReportsPage />}
       {screen === 'policy-form' && <PolicyFormPage />}
     </AppLayout>

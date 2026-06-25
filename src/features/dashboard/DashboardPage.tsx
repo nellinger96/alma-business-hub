@@ -15,18 +15,41 @@
   NotebookText,
   ShieldCheck,
   Trophy,
-  Users
+  Users,
+  X
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Tabs } from '../../components/ui/Tabs'
 
 type Props = {
   activeBusiness: string
+  activeEmployeeName: string
+  initialTab: string
 }
 
-export function DashboardPage({ activeBusiness }: Props) {
-  const [activeTab, setActiveTab] = useState('home')
+export function DashboardPage({ activeBusiness, activeEmployeeName, initialTab }: Props) {
+  const [activeTab, setActiveTab] = useState(initialTab || 'home')
+  const [completedTasks, setCompletedTasks] = useState<string[]>([])
+  const [messagePreview, setMessagePreview] = useState<{ title: string; body: string } | null>(null)
+  const [noteText, setNoteText] = useState('')
+  const [notes, setNotes] = useState<string[]>(['Called client. Waiting for missing documents.'])
+  const [saleAmount, setSaleAmount] = useState('1200')
+  const [downPayment, setDownPayment] = useState('200')
+  const [months, setMonths] = useState('4')
+
+  useEffect(() => {
+    setActiveTab(initialTab || 'home')
+  }, [initialTab])
+
   const isPetra = activeBusiness === 'Petra Insurance'
+
+  const monthlyPayment = useMemo(() => {
+    const total = Number(saleAmount) || 0
+    const down = Number(downPayment) || 0
+    const term = Math.max(Number(months) || 1, 1)
+
+    return Math.max((total - down) / term, 0).toFixed(2)
+  }, [saleAmount, downPayment, months])
 
   const tabs = [
     { id: 'home', label: 'My Dashboard' },
@@ -36,6 +59,7 @@ export function DashboardPage({ activeBusiness }: Props) {
     { id: 'policies', label: isPetra ? 'Policies' : 'Files' },
     { id: 'messages', label: 'Messages' },
     { id: 'tools', label: 'Tools' },
+    { id: 'calendar', label: 'Calendar' },
     { id: 'reports', label: 'My Reports' }
   ]
 
@@ -75,12 +99,43 @@ export function DashboardPage({ activeBusiness }: Props) {
         'Follow up on pending payment plan'
       ]
 
+  const toggleTask = (task: string) => {
+    if (completedTasks.includes(task)) {
+      setCompletedTasks(completedTasks.filter((item) => item !== task))
+    } else {
+      setCompletedTasks([...completedTasks, task])
+    }
+  }
+
+  const openBirthdayText = (clientName: string) => {
+    setMessagePreview({
+      title: `Birthday text to ${clientName}`,
+      body: `Hi ${clientName}, happy birthday from ${activeBusiness}! We hope you have a blessed and beautiful day. Thank you for trusting our team.`
+    })
+  }
+
+  const openPromoText = () => {
+    setMessagePreview({
+      title: 'Promo coupon text',
+      body: isPetra
+        ? `Hi! This is ${activeBusiness}. We are currently helping families review life insurance and pre-need funeral planning options. Reply YES if you would like a quick quote or appointment.`
+        : `Hi! This is ${activeBusiness}. We are offering a limited-time promo for tax services and document filing. Reply YES if you would like help getting started.`
+    })
+  }
+
+  const addNote = () => {
+    if (!noteText.trim()) return
+
+    setNotes([noteText.trim(), ...notes])
+    setNoteText('')
+  }
+
   return (
     <div>
       <div className="page-heading">
-        <h1>{activeBusiness} Employee Dashboard</h1>
+        <h1>{activeEmployeeName} Dashboard</h1>
         <p>
-          Your personal workspace for clients, alerts, payment plans, services, sales contests, messages, notes, and reports.
+          {activeBusiness} workspace for clients, alerts, payment plans, services, sales contests, messages, notes, and reports.
         </p>
       </div>
 
@@ -131,16 +186,22 @@ export function DashboardPage({ activeBusiness }: Props) {
           </section>
 
           <section className="task-list">
-            {tasks.map((task) => (
-              <div className="task-item" key={task}>
-                <CheckCircle2 />
-                <div>
-                  <strong>{task}</strong>
-                  <p>Daily task preview. This will become a real assigned task after Supabase is connected.</p>
+            {tasks.map((task) => {
+              const isComplete = completedTasks.includes(task)
+
+              return (
+                <div className={isComplete ? 'task-item complete' : 'task-item'} key={task}>
+                  <CheckCircle2 />
+                  <div>
+                    <strong>{task}</strong>
+                    <p>{isComplete ? 'Completed in demo mode.' : 'Daily task preview. Click complete to test the workflow.'}</p>
+                  </div>
+                  <button className={isComplete ? 'status-pill active' : 'status-pill pending'} onClick={() => toggleTask(task)}>
+                    {isComplete ? 'Complete' : 'Pending'}
+                  </button>
                 </div>
-                <span className="status-pill pending">Pending</span>
-              </div>
-            ))}
+              )
+            })}
           </section>
         </>
       )}
@@ -148,6 +209,7 @@ export function DashboardPage({ activeBusiness }: Props) {
       {activeTab === 'clients' && (
         <section className="table-panel admin-table">
           <h3>{isPetra ? 'My Client Directory' : 'My Customer Directory'}</h3>
+
           <div className="table-scroll">
             <table>
               <thead>
@@ -172,7 +234,11 @@ export function DashboardPage({ activeBusiness }: Props) {
                     <td>{client.service}</td>
                     <td>{client.status}</td>
                     <td>{client.birthday}</td>
-                    <td><button className="small-action-button">Text</button></td>
+                    <td>
+                      <button className="small-action-button" onClick={() => openBirthdayText(client.name)}>
+                        Text
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -186,14 +252,14 @@ export function DashboardPage({ activeBusiness }: Props) {
           <div className="quick-card">
             <Handshake size={38} />
             <h3>My Sales Completed</h3>
-            <p>Track your completed sales for the selected business.</p>
+            <p>Track completed sales for the selected business.</p>
             <button className="teal-button">View Sales</button>
           </div>
 
           <div className="quick-card">
             <Trophy size={38} />
             <h3>Sales Contest</h3>
-            <p>See your rank, goal, and how close you are to winning.</p>
+            <p>You are currently ranked #2 this month. Close $1,200 more to reach #1.</p>
             <button className="teal-button">View Contest</button>
           </div>
 
@@ -211,22 +277,22 @@ export function DashboardPage({ activeBusiness }: Props) {
           <div className="quick-card">
             <CalendarDays size={38} />
             <h3>Upcoming Payments</h3>
-            <p>See client payment plans due today, this week, or this month.</p>
+            <p>3 payment plans are due this week.</p>
             <button className="teal-button">View Calendar</button>
           </div>
 
           <div className="quick-card">
             <AlertCircle size={38} />
             <h3>Late Payments</h3>
-            <p>Customers who need a payment reminder or follow-up.</p>
-            <button className="teal-button">Send Reminder</button>
+            <p>1 customer needs a payment reminder today.</p>
+            <button className="teal-button" onClick={openPromoText}>Send Reminder</button>
           </div>
 
           <div className="quick-card">
-            <FileText size={38} />
-            <h3>Payment Notes</h3>
-            <p>Track notes, promises to pay, and next due dates.</p>
-            <button className="teal-button">Open Notes</button>
+            <Calculator size={38} />
+            <h3>Payment Plan Calculator</h3>
+            <p>Use the calculator inside Tools to estimate monthly payments.</p>
+            <button className="teal-button" onClick={() => setActiveTab('tools')}>Open Calculator</button>
           </div>
         </section>
       )}
@@ -253,46 +319,99 @@ export function DashboardPage({ activeBusiness }: Props) {
             <Gift size={38} />
             <h3>Happy Birthday Text</h3>
             <p>Send birthday messages to clients with upcoming birthdays.</p>
-            <button className="teal-button">Send Text</button>
+            <button className="teal-button" onClick={() => openBirthdayText(clients[0].name)}>Preview Text</button>
           </div>
 
           <div className="quick-card">
             <MessageSquareText size={38} />
             <h3>Promo Coupons</h3>
             <p>Text clients promo coupons and seasonal offers.</p>
-            <button className="teal-button">Create Promo</button>
+            <button className="teal-button" onClick={openPromoText}>Create Promo</button>
           </div>
 
           <div className="quick-card">
             <AlertCircle size={38} />
             <h3>Service Reminders</h3>
             <p>Remind clients about documents, payments, appointments, or renewals.</p>
-            <button className="teal-button">Send Reminder</button>
+            <button className="teal-button" onClick={openPromoText}>Send Reminder</button>
           </div>
         </section>
       )}
 
       {activeTab === 'tools' && (
+        <section className="tools-grid">
+          <div className="tool-panel">
+            <div className="tool-panel-head">
+              <Calculator />
+              <h3>Payment Calculator</h3>
+            </div>
+
+            <label>Total Sale / Balance</label>
+            <input value={saleAmount} onChange={(e) => setSaleAmount(e.target.value)} />
+
+            <label>Down Payment</label>
+            <input value={downPayment} onChange={(e) => setDownPayment(e.target.value)} />
+
+            <label>Months</label>
+            <input value={months} onChange={(e) => setMonths(e.target.value)} />
+
+            <div className="calculator-result">
+              Estimated monthly payment:
+              <strong>${monthlyPayment}</strong>
+            </div>
+          </div>
+
+          <div className="tool-panel">
+            <div className="tool-panel-head">
+              <NotebookText />
+              <h3>Notes</h3>
+            </div>
+
+            <textarea
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              placeholder="Add a note for this client or follow-up..."
+            />
+
+            <button className="primary-button full" onClick={addNote}>Add Note</button>
+
+            <div className="notes-list">
+              {notes.map((note, index) => (
+                <div className="note-item" key={`${note}-${index}`}>
+                  {note}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="tool-panel">
+            <div className="tool-panel-head">
+              <HelpCircle />
+              <h3>Get Help</h3>
+            </div>
+
+            <p>Quick internal help area for scripts, workflows, training, and questions.</p>
+
+            <button className="teal-button">Open Help Center</button>
+          </div>
+        </section>
+      )}
+
+      {activeTab === 'calendar' && (
         <section className="quick-card-grid">
           <div className="quick-card">
-            <Calculator size={38} />
-            <h3>Calculator</h3>
-            <p>Quick calculator for payments, fees, premiums, tax estimates, or balances.</p>
-            <button className="teal-button">Open Calculator</button>
+            <CalendarDays size={38} />
+            <h3>Today</h3>
+            <p>10:00 AM - Follow up with client</p>
+            <p>1:30 PM - Payment plan reminder</p>
+            <button className="teal-button">Add Event</button>
           </div>
 
           <div className="quick-card">
-            <NotebookText size={38} />
-            <h3>Notes</h3>
-            <p>Personal notes and client notes for follow-up tracking.</p>
-            <button className="teal-button">Open Notes</button>
-          </div>
-
-          <div className="quick-card">
-            <HelpCircle size={38} />
-            <h3>Get Help</h3>
-            <p>Quick help section for workflows, questions, scripts, and internal guidance.</p>
-            <button className="teal-button">Get Help</button>
+            <AlertCircle size={38} />
+            <h3>Upcoming</h3>
+            <p>3 birthdays, 2 payment reminders, and 4 file follow-ups this week.</p>
+            <button className="teal-button">View Week</button>
           </div>
         </section>
       )}
@@ -320,6 +439,28 @@ export function DashboardPage({ activeBusiness }: Props) {
             <button className="teal-button">View Contest</button>
           </div>
         </section>
+      )}
+
+      {messagePreview && (
+        <div className="modal-backdrop">
+          <div className="demo-modal">
+            <div className="demo-modal-head">
+              <h2>{messagePreview.title}</h2>
+              <button onClick={() => setMessagePreview(null)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="message-preview-box">
+              {messagePreview.body}
+            </div>
+
+            <div className="modal-actions">
+              <button className="secondary-button" onClick={() => setMessagePreview(null)}>Cancel</button>
+              <button className="primary-button" onClick={() => setMessagePreview(null)}>Demo Send</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

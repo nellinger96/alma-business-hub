@@ -17,25 +17,25 @@
 
 type Props = {
   activeScreen: string
-  setScreen: (screen: any) => void
+  navigateTo: (screen: any, dashboardTab?: string) => void
 }
 
-export function Sidebar({ activeScreen, setScreen }: Props) {
+export function Sidebar({ activeScreen, navigateTo }: Props) {
   const items = [
     { label: 'Admin Hub', icon: Crown, screen: 'admin' },
-    { label: 'My Dashboard', icon: Users, screen: 'dashboard' },
-    { label: 'Client Directory', icon: Search, screen: 'dashboard' },
-    { label: 'Sales Contest', icon: Trophy, screen: 'dashboard' },
-    { label: 'Payment Plans', icon: DollarSign, screen: 'dashboard' },
-    { label: 'Policies / Files', icon: ShieldCheck, screen: 'policy-form' },
-    { label: 'Messages', icon: MessageSquareText, screen: 'dashboard' },
-    { label: 'Alerts', icon: AlertCircle, screen: 'dashboard' },
-    { label: 'Calendar', icon: CalendarDays, screen: 'dashboard' },
-    { label: 'Notes', icon: NotebookText, screen: 'dashboard' },
-    { label: 'Calculator', icon: Calculator, screen: 'dashboard' },
+    { label: 'My Dashboard', icon: Users, screen: 'dashboard', tab: 'home' },
+    { label: 'Client Directory', icon: Search, screen: 'dashboard', tab: 'clients' },
+    { label: 'Sales Contest', icon: Trophy, screen: 'dashboard', tab: 'sales' },
+    { label: 'Payment Plans', icon: DollarSign, screen: 'dashboard', tab: 'payments' },
+    { label: 'Policies / Files', icon: ShieldCheck, screen: 'dashboard', tab: 'policies' },
+    { label: 'Messages', icon: MessageSquareText, screen: 'dashboard', tab: 'messages' },
+    { label: 'Alerts', icon: AlertCircle, screen: 'dashboard', tab: 'home' },
+    { label: 'Calendar', icon: CalendarDays, screen: 'dashboard', tab: 'calendar' },
+    { label: 'Notes', icon: NotebookText, screen: 'dashboard', tab: 'tools' },
+    { label: 'Calculator', icon: Calculator, screen: 'dashboard', tab: 'tools' },
     { label: 'Reports', icon: BarChart3, screen: 'reports' },
-    { label: 'Documents', icon: FileText, screen: 'dashboard' },
-    { label: 'Get Help', icon: HelpCircle, screen: 'dashboard' }
+    { label: 'Documents', icon: FileText, screen: 'dashboard', tab: 'policies' },
+    { label: 'Get Help', icon: HelpCircle, screen: 'dashboard', tab: 'tools' }
   ]
 
   return (
@@ -57,7 +57,7 @@ export function Sidebar({ activeScreen, setScreen }: Props) {
             <button
               key={item.label}
               className={activeScreen === item.screen ? 'sidebar-item active' : 'sidebar-item'}
-              onClick={() => setScreen(item.screen)}
+              onClick={() => navigateTo(item.screen, item.tab)}
             >
               <Icon size={22} />
               <span>{item.label}</span>

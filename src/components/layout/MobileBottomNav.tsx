@@ -2,22 +2,22 @@
   LayoutDashboard,
   Crown,
   BarChart3,
-  ShieldCheck,
+  MessageSquareText,
   Menu
 } from 'lucide-react'
 
 type Props = {
   activeScreen: string
-  setScreen: (screen: any) => void
+  navigateTo: (screen: any, dashboardTab?: string) => void
   onOpenMenu: () => void
 }
 
-export function MobileBottomNav({ activeScreen, setScreen, onOpenMenu }: Props) {
+export function MobileBottomNav({ activeScreen, navigateTo, onOpenMenu }: Props) {
   const items = [
-    { label: 'Home', icon: LayoutDashboard, screen: 'dashboard' },
+    { label: 'Home', icon: LayoutDashboard, screen: 'dashboard', tab: 'home' },
     { label: 'Admin', icon: Crown, screen: 'admin' },
     { label: 'Reports', icon: BarChart3, screen: 'reports' },
-    { label: 'Policy', icon: ShieldCheck, screen: 'policy-form' }
+    { label: 'Text', icon: MessageSquareText, screen: 'dashboard', tab: 'messages' }
   ]
 
   return (
@@ -29,7 +29,7 @@ export function MobileBottomNav({ activeScreen, setScreen, onOpenMenu }: Props) 
           <button
             key={item.label}
             className={activeScreen === item.screen ? 'mobile-nav-item active' : 'mobile-nav-item'}
-            onClick={() => setScreen(item.screen)}
+            onClick={() => navigateTo(item.screen, item.tab)}
           >
             <Icon size={21} />
             <span>{item.label}</span>

@@ -18,7 +18,11 @@
 import { useState } from 'react'
 import { Tabs } from '../../components/ui/Tabs'
 
-export function AdminDashboardPage() {
+type Props = {
+  onViewEmployee: (employeeName: string, business: string) => void
+}
+
+export function AdminDashboardPage({ onViewEmployee }: Props) {
   const [activeTab, setActiveTab] = useState('overview')
 
   const tabs = [
@@ -32,10 +36,10 @@ export function AdminDashboardPage() {
   ]
 
   const employeeRows = [
-    { name: 'Alma Mora', role: 'Super Admin', business: 'All Businesses', sales: '$18,400', clients: 42, status: 'Active' },
-    { name: 'Nelly Lopez', role: 'Admin', business: 'Alianza', sales: '$7,850', clients: 31, status: 'Active' },
-    { name: 'Carolina Medina', role: 'Employee', business: 'Alianza', sales: '$5,200', clients: 24, status: 'Active' },
-    { name: 'Petra Team Member', role: 'Employee', business: 'Petra Insurance', sales: '$6,900', clients: 19, status: 'Active' }
+    { name: 'Alma Mora', role: 'Super Admin', business: 'All Businesses', sales: '$18,400', clients: 42 },
+    { name: 'Nelly Lopez', role: 'Admin', business: 'Alianza', sales: '$7,850', clients: 31 },
+    { name: 'Carolina Medina', role: 'Employee', business: 'Alianza', sales: '$5,200', clients: 24 },
+    { name: 'Petra Team Member', role: 'Employee', business: 'Petra Insurance', sales: '$6,900', clients: 19 }
   ]
 
   const salesRows = [
@@ -86,53 +90,19 @@ export function AdminDashboardPage() {
             </div>
           </section>
 
-          <section className="admin-business-grid">
-            <div className="business-summary-card">
-              <div className="business-summary-head">
-                <Building2 />
-                <div>
-                  <h2>Alianza</h2>
-                  <p>Tax services and document filing dashboard.</p>
-                </div>
-              </div>
-
-              <div className="mini-metrics">
-                <span><strong>$14.2k</strong> Sales</span>
-                <span><strong>126</strong> Customers</span>
-                <span><strong>9</strong> Payment Plans</span>
-              </div>
-            </div>
-
-            <div className="business-summary-card">
-              <div className="business-summary-head">
-                <ShieldCheck />
-                <div>
-                  <h2>Petra Insurance</h2>
-                  <p>Life insurance and pre-need funeral services dashboard.</p>
-                </div>
-              </div>
-
-              <div className="mini-metrics">
-                <span><strong>$24.1k</strong> Sales</span>
-                <span><strong>82</strong> Clients</span>
-                <span><strong>6</strong> Payment Plans</span>
-              </div>
-            </div>
-          </section>
-
           <section className="quick-card-grid">
             <div className="quick-card">
               <Trophy size={38} />
               <h3>Sales Contest</h3>
               <p>Track monthly winners, employee rankings, and prize goals.</p>
-              <button className="teal-button">View Contest</button>
+              <button className="teal-button" onClick={() => setActiveTab('competitions')}>View Contest</button>
             </div>
 
             <div className="quick-card">
               <Eye size={38} />
               <h3>View Employee Dashboards</h3>
               <p>Open an employee dashboard to see their clients, tasks, sales, and reports.</p>
-              <button className="teal-button">View Employees</button>
+              <button className="teal-button" onClick={() => setActiveTab('employees')}>View Employees</button>
             </div>
 
             <div className="quick-card">
@@ -188,7 +158,7 @@ export function AdminDashboardPage() {
 
           <div className="quick-card">
             <Medal size={38} />
-            <h3>Top 3 Employees</h3>
+            <h3>Top Employees</h3>
             <p>Rank employees by sales, completed files, referrals, or payment collections.</p>
             <button className="teal-button">Open Board</button>
           </div>
@@ -225,7 +195,14 @@ export function AdminDashboardPage() {
                     <td>{employee.business}</td>
                     <td>{employee.sales}</td>
                     <td>{employee.clients}</td>
-                    <td><button className="small-action-button">View</button></td>
+                    <td>
+                      <button
+                        className="small-action-button"
+                        onClick={() => onViewEmployee(employee.name, employee.business)}
+                      >
+                        View
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

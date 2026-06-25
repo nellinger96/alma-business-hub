@@ -1,16 +1,18 @@
 ﻿import {
-  Search,
-  FileSearch,
-  DownloadCloud,
+  AlertCircle,
   BarChart3,
-  UserRound,
-  Database,
-  Building2,
-  MonitorCog,
+  Calculator,
+  CalendarDays,
+  Crown,
+  DollarSign,
   FileText,
-  CreditCard,
+  HelpCircle,
+  MessageSquareText,
+  NotebookText,
+  Search,
   ShieldCheck,
-  Crown
+  Trophy,
+  Users
 } from 'lucide-react'
 
 type Props = {
@@ -21,17 +23,19 @@ type Props = {
 export function Sidebar({ activeScreen, setScreen }: Props) {
   const items = [
     { label: 'Admin Hub', icon: Crown, screen: 'admin' },
-    { label: 'Search', icon: Search, screen: 'dashboard' },
-    { label: 'Advance Search', icon: FileSearch, screen: 'dashboard' },
-    { label: 'Downloads', icon: DownloadCloud, screen: 'dashboard' },
+    { label: 'My Dashboard', icon: Users, screen: 'dashboard' },
+    { label: 'Client Directory', icon: Search, screen: 'dashboard' },
+    { label: 'Sales Contest', icon: Trophy, screen: 'dashboard' },
+    { label: 'Payment Plans', icon: DollarSign, screen: 'dashboard' },
+    { label: 'Policies / Files', icon: ShieldCheck, screen: 'policy-form' },
+    { label: 'Messages', icon: MessageSquareText, screen: 'dashboard' },
+    { label: 'Alerts', icon: AlertCircle, screen: 'dashboard' },
+    { label: 'Calendar', icon: CalendarDays, screen: 'dashboard' },
+    { label: 'Notes', icon: NotebookText, screen: 'dashboard' },
+    { label: 'Calculator', icon: Calculator, screen: 'dashboard' },
     { label: 'Reports', icon: BarChart3, screen: 'reports' },
-    { label: 'Prospects', icon: UserRound, screen: 'dashboard' },
-    { label: 'B to B Database', icon: Database, screen: 'dashboard' },
-    { label: 'Carrier Directory', icon: Building2, screen: 'dashboard' },
-    { label: 'Administration', icon: MonitorCog, screen: 'admin' },
     { label: 'Documents', icon: FileText, screen: 'dashboard' },
-    { label: 'Merchant Services', icon: CreditCard, screen: 'dashboard' },
-    { label: 'Policy Creation', icon: ShieldCheck, screen: 'policy-form' }
+    { label: 'Get Help', icon: HelpCircle, screen: 'dashboard' }
   ]
 
   return (

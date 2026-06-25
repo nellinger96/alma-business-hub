@@ -1,12 +1,21 @@
 ﻿import {
-  HeartPulse,
-  Landmark,
-  FileText,
-  ClipboardList,
-  FolderOpen,
+  AlertCircle,
+  Calculator,
+  CalendarDays,
   CheckCircle2,
+  ClipboardList,
+  FileCheck2,
+  FileText,
+  Gift,
+  Handshake,
+  HeartPulse,
+  HelpCircle,
+  Landmark,
+  MessageSquareText,
+  NotebookText,
   ShieldCheck,
-  FileCheck2
+  Trophy,
+  Users
 } from 'lucide-react'
 import { useState } from 'react'
 import { Tabs } from '../../components/ui/Tabs'
@@ -16,119 +25,95 @@ type Props = {
 }
 
 export function DashboardPage({ activeBusiness }: Props) {
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState('home')
+  const isPetra = activeBusiness === 'Petra Insurance'
 
   const tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'clients', label: activeBusiness === 'Petra Insurance' ? 'Clients' : 'Customers' },
-    { id: 'services', label: 'Services' },
-    { id: 'tasks', label: 'Tasks' },
-    { id: 'documents', label: 'Documents' }
+    { id: 'home', label: 'My Dashboard' },
+    { id: 'clients', label: isPetra ? 'My Clients' : 'My Customers' },
+    { id: 'sales', label: 'Sales' },
+    { id: 'payments', label: 'Payment Plans' },
+    { id: 'policies', label: isPetra ? 'Policies' : 'Files' },
+    { id: 'messages', label: 'Messages' },
+    { id: 'tools', label: 'Tools' },
+    { id: 'reports', label: 'My Reports' }
   ]
-
-  const isPetra = activeBusiness === 'Petra Insurance'
 
   const services = isPetra
     ? [
-        {
-          label: 'Life Insurance',
-          description: 'Manage life insurance leads, clients, policies, documents, and follow-ups.',
-          icon: HeartPulse
-        },
-        {
-          label: 'Pre-Need Funeral Services',
-          description: 'Track funeral planning clients, service details, documents, and appointment follow-ups.',
-          icon: ShieldCheck
-        }
+        { label: 'Life Insurance', icon: HeartPulse, description: 'Quote, track, and manage life insurance clients.' },
+        { label: 'Pre-Need Funeral Services', icon: ShieldCheck, description: 'Manage pre-need funeral service clients and documents.' }
       ]
     : [
-        {
-          label: 'Tax Services',
-          description: 'Manage tax customers, filing status, required documents, and follow-ups.',
-          icon: Landmark
-        },
-        {
-          label: 'Document Filing',
-          description: 'Track document preparation, customer paperwork, filing progress, and completion status.',
-          icon: FileCheck2
-        }
+        { label: 'Tax Services', icon: Landmark, description: 'Track tax customers, documents, payments, and filing status.' },
+        { label: 'Document Filing', icon: FileCheck2, description: 'Manage document filing customers, paperwork, and completion status.' }
       ]
 
-  const rows = isPetra
+  const clients = isPetra
     ? [
-        {
-          id: 'P-1001',
-          name: 'Maria Gonzalez',
-          phone: '(714) 555-1822',
-          service: 'Life Insurance',
-          createdBy: 'Alma Mora',
-          status: 'Needs Follow-up',
-          date: '06/23/2026'
-        },
-        {
-          id: 'P-1002',
-          name: 'Jose Ramirez',
-          phone: '(909) 555-4410',
-          service: 'Pre-Need Funeral Services',
-          createdBy: 'Petra Team',
-          status: 'Documents Pending',
-          date: '06/23/2026'
-        },
-        {
-          id: 'P-1003',
-          name: 'Ana Martinez',
-          phone: '(951) 555-9033',
-          service: 'Life Insurance',
-          createdBy: 'Alma Mora',
-          status: 'Quote Review',
-          date: '06/22/2026'
-        }
+        { id: 'P-1001', name: 'Maria Gonzalez', phone: '(714) 555-1822', service: 'Life Insurance', status: 'Needs Follow-up', birthday: 'June 28' },
+        { id: 'P-1002', name: 'Jose Ramirez', phone: '(909) 555-4410', service: 'Pre-Need Funeral Services', status: 'Payment Plan', birthday: 'July 2' },
+        { id: 'P-1003', name: 'Ana Martinez', phone: '(951) 555-9033', service: 'Life Insurance', status: 'Quote Review', birthday: 'July 10' }
       ]
     : [
-        {
-          id: 'A-2001',
-          name: 'Luis Hernandez',
-          phone: '(714) 555-2290',
-          service: 'Tax Services',
-          createdBy: 'Alianza Team',
-          status: 'Missing W-2',
-          date: '06/23/2026'
-        },
-        {
-          id: 'A-2002',
-          name: 'Carmen Lopez',
-          phone: '(909) 555-7001',
-          service: 'Document Filing',
-          createdBy: 'Alianza Team',
-          status: 'In Progress',
-          date: '06/23/2026'
-        },
-        {
-          id: 'A-2003',
-          name: 'Miguel Torres',
-          phone: '(951) 555-1188',
-          service: 'Tax Services',
-          createdBy: 'Alma Mora',
-          status: 'Ready to File',
-          date: '06/22/2026'
-        }
+        { id: 'A-2001', name: 'Luis Hernandez', phone: '(714) 555-2290', service: 'Tax Services', status: 'Missing W-2', birthday: 'June 27' },
+        { id: 'A-2002', name: 'Carmen Lopez', phone: '(909) 555-7001', service: 'Document Filing', status: 'In Progress', birthday: 'July 4' },
+        { id: 'A-2003', name: 'Miguel Torres', phone: '(951) 555-1188', service: 'Tax Services', status: 'Ready to File', birthday: 'July 12' }
+      ]
+
+  const tasks = isPetra
+    ? [
+        'Call Maria Gonzalez about life insurance quote',
+        'Review Jose Ramirez pre-need documents',
+        'Send birthday text to upcoming client',
+        'Follow up on pending payment plan'
+      ]
+    : [
+        'Request missing W-2 from Luis Hernandez',
+        'Review Carmen Lopez document filing packet',
+        'Send promo coupon text to tax customers',
+        'Follow up on pending payment plan'
       ]
 
   return (
     <div>
       <div className="page-heading">
-        <h1>{activeBusiness} Dashboard</h1>
+        <h1>{activeBusiness} Employee Dashboard</h1>
         <p>
-          {isPetra
-            ? 'Manage life insurance clients, pre-need funeral service clients, documents, and follow-ups.'
-            : 'Manage tax customers, document filing customers, paperwork, tasks, and follow-ups.'}
+          Your personal workspace for clients, alerts, payment plans, services, sales contests, messages, notes, and reports.
         </p>
       </div>
 
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 
-      {activeTab === 'overview' && (
+      {activeTab === 'home' && (
         <>
+          <section className="dashboard-stat-grid">
+            <div className="dashboard-stat-card">
+              <Users />
+              <span>{isPetra ? 'My Clients' : 'My Customers'}</span>
+              <strong>{isPetra ? '19' : '31'}</strong>
+            </div>
+
+            <div className="dashboard-stat-card">
+              <Handshake />
+              <span>My Sales</span>
+              <strong>{isPetra ? '$6.9k' : '$7.8k'}</strong>
+            </div>
+
+            <div className="dashboard-stat-card">
+              <AlertCircle />
+              <span>Alerts</span>
+              <strong>6</strong>
+            </div>
+
+            <div className="dashboard-stat-card">
+              <Trophy />
+              <span>Contest Rank</span>
+              <strong>#2</strong>
+            </div>
+          </section>
+
           <section className="service-row">
             {services.map((service) => {
               const Icon = service.icon
@@ -145,140 +130,195 @@ export function DashboardPage({ activeBusiness }: Props) {
             })}
           </section>
 
-          <section className="dashboard-stat-grid">
-            <div className="dashboard-stat-card">
-              <FileText />
-              <span>{isPetra ? 'Active Clients' : 'Active Customers'}</span>
-              <strong>{isPetra ? '82' : '126'}</strong>
-            </div>
-
-            <div className="dashboard-stat-card">
-              <FolderOpen />
-              <span>Open Files</span>
-              <strong>{isPetra ? '18' : '31'}</strong>
-            </div>
-
-            <div className="dashboard-stat-card">
-              <ClipboardList />
-              <span>Tasks Due</span>
-              <strong>{isPetra ? '10' : '14'}</strong>
-            </div>
-
-            <div className="dashboard-stat-card">
-              <FileCheck2 />
-              <span>Pending Documents</span>
-              <strong>{isPetra ? '4' : '9'}</strong>
-            </div>
+          <section className="task-list">
+            {tasks.map((task) => (
+              <div className="task-item" key={task}>
+                <CheckCircle2 />
+                <div>
+                  <strong>{task}</strong>
+                  <p>Daily task preview. This will become a real assigned task after Supabase is connected.</p>
+                </div>
+                <span className="status-pill pending">Pending</span>
+              </div>
+            ))}
           </section>
         </>
       )}
 
       {activeTab === 'clients' && (
-        <section className="split-panels">
-          <div className="empty-panel">
-            <h3>Follow-ups</h3>
-            <div className="mini-list">
-              <p>{isPetra ? '2 life insurance follow-ups' : '4 tax filing follow-ups'}</p>
-              <p>{isPetra ? '1 pre-need appointment pending' : '3 document filing customers pending'}</p>
-              <p>{isPetra ? '4 documents waiting review' : '9 documents missing'}</p>
-            </div>
-          </div>
-
-          <div className="table-panel">
-            <h3>{isPetra ? 'Clients to Date' : 'Customers to Date'}</h3>
-
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>ID / Name</th>
-                    <th>Phone</th>
-                    <th>Service</th>
-                    <th>Status</th>
-                    <th>Created by</th>
-                    <th>Creation Date</th>
+        <section className="table-panel admin-table">
+          <h3>{isPetra ? 'My Client Directory' : 'My Customer Directory'}</h3>
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID / Name</th>
+                  <th>Phone</th>
+                  <th>Service</th>
+                  <th>Status</th>
+                  <th>Birthday</th>
+                  <th>Text</th>
+                </tr>
+              </thead>
+              <tbody>
+                {clients.map((client) => (
+                  <tr key={client.id}>
+                    <td>
+                      <strong>{client.id}</strong>
+                      <br />
+                      {client.name}
+                    </td>
+                    <td>{client.phone}</td>
+                    <td>{client.service}</td>
+                    <td>{client.status}</td>
+                    <td>{client.birthday}</td>
+                    <td><button className="small-action-button">Text</button></td>
                   </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row) => (
-                    <tr key={row.id}>
-                      <td>
-                        <strong>{row.id}</strong>
-                        <br />
-                        {row.name}
-                      </td>
-                      <td>{row.phone}</td>
-                      <td>{row.service}</td>
-                      <td>{row.status}</td>
-                      <td>{row.createdBy}</td>
-                      <td>{row.date}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
       )}
 
-      {activeTab === 'services' && (
+      {activeTab === 'sales' && (
         <section className="quick-card-grid">
-          {services.map((service) => {
-            const Icon = service.icon
+          <div className="quick-card">
+            <Handshake size={38} />
+            <h3>My Sales Completed</h3>
+            <p>Track your completed sales for the selected business.</p>
+            <button className="teal-button">View Sales</button>
+          </div>
 
-            return (
-              <div className="quick-card" key={service.label}>
-                <Icon size={38} />
-                <h3>{service.label}</h3>
-                <p>{service.description}</p>
-                <button className="teal-button">Open</button>
-              </div>
-            )
-          })}
+          <div className="quick-card">
+            <Trophy size={38} />
+            <h3>Sales Contest</h3>
+            <p>See your rank, goal, and how close you are to winning.</p>
+            <button className="teal-button">View Contest</button>
+          </div>
+
+          <div className="quick-card">
+            <ClipboardList size={38} />
+            <h3>Pending Sales</h3>
+            <p>Follow up with clients who are close to closing.</p>
+            <button className="teal-button">Open Follow-ups</button>
+          </div>
         </section>
       )}
 
-      {activeTab === 'tasks' && (
-        <section className="task-list">
-          {(isPetra
-            ? [
-                'Call Maria Gonzalez about life insurance quote',
-                'Review Jose Ramirez pre-need service documents',
-                'Schedule follow-up appointment for Ana Martinez',
-                'Check pending beneficiary information'
-              ]
-            : [
-                'Request missing W-2 from Luis Hernandez',
-                'Review Carmen Lopez document filing packet',
-                'Confirm Miguel Torres tax filing status',
-                'Upload completed document filing receipt'
-              ]
-          ).map((task) => (
-            <div className="task-item" key={task}>
-              <CheckCircle2 />
-              <div>
-                <strong>{task}</strong>
-                <p>Assigned task preview. This will connect to real employee tasks later.</p>
-              </div>
-              <span className="status-pill pending">Pending</span>
-            </div>
-          ))}
+      {activeTab === 'payments' && (
+        <section className="quick-card-grid">
+          <div className="quick-card">
+            <CalendarDays size={38} />
+            <h3>Upcoming Payments</h3>
+            <p>See client payment plans due today, this week, or this month.</p>
+            <button className="teal-button">View Calendar</button>
+          </div>
+
+          <div className="quick-card">
+            <AlertCircle size={38} />
+            <h3>Late Payments</h3>
+            <p>Customers who need a payment reminder or follow-up.</p>
+            <button className="teal-button">Send Reminder</button>
+          </div>
+
+          <div className="quick-card">
+            <FileText size={38} />
+            <h3>Payment Notes</h3>
+            <p>Track notes, promises to pay, and next due dates.</p>
+            <button className="teal-button">Open Notes</button>
+          </div>
         </section>
       )}
 
-      {activeTab === 'documents' && (
+      {activeTab === 'policies' && (
         <section className="quick-card-grid">
           {(isPetra
-            ? ['Application', 'Beneficiary Info', 'Policy PDF', 'ID Document', 'Payment Receipt', 'Client Notes']
-            : ['W-2', '1099', 'ID Document', 'Tax Return Draft', 'Filing Receipt', 'Customer Notes']
-          ).map((doc) => (
-            <div className="quick-card" key={doc}>
+            ? ['Life Insurance Policies', 'Pre-Need Files', 'Applications', 'Beneficiary Info', 'Policy PDFs', 'Client Notes']
+            : ['Tax Files', 'Document Filing Cases', 'Customer IDs', 'Tax Return Drafts', 'Filing Receipts', 'Customer Notes']
+          ).map((item) => (
+            <div className="quick-card" key={item}>
               <FileText size={38} />
-              <h3>{doc}</h3>
-              <p>Document placeholder for static prototype.</p>
+              <h3>{item}</h3>
+              <p>Open and review files related to your assigned clients.</p>
               <button className="teal-button">View</button>
             </div>
           ))}
+        </section>
+      )}
+
+      {activeTab === 'messages' && (
+        <section className="quick-card-grid">
+          <div className="quick-card">
+            <Gift size={38} />
+            <h3>Happy Birthday Text</h3>
+            <p>Send birthday messages to clients with upcoming birthdays.</p>
+            <button className="teal-button">Send Text</button>
+          </div>
+
+          <div className="quick-card">
+            <MessageSquareText size={38} />
+            <h3>Promo Coupons</h3>
+            <p>Text clients promo coupons and seasonal offers.</p>
+            <button className="teal-button">Create Promo</button>
+          </div>
+
+          <div className="quick-card">
+            <AlertCircle size={38} />
+            <h3>Service Reminders</h3>
+            <p>Remind clients about documents, payments, appointments, or renewals.</p>
+            <button className="teal-button">Send Reminder</button>
+          </div>
+        </section>
+      )}
+
+      {activeTab === 'tools' && (
+        <section className="quick-card-grid">
+          <div className="quick-card">
+            <Calculator size={38} />
+            <h3>Calculator</h3>
+            <p>Quick calculator for payments, fees, premiums, tax estimates, or balances.</p>
+            <button className="teal-button">Open Calculator</button>
+          </div>
+
+          <div className="quick-card">
+            <NotebookText size={38} />
+            <h3>Notes</h3>
+            <p>Personal notes and client notes for follow-up tracking.</p>
+            <button className="teal-button">Open Notes</button>
+          </div>
+
+          <div className="quick-card">
+            <HelpCircle size={38} />
+            <h3>Get Help</h3>
+            <p>Quick help section for workflows, questions, scripts, and internal guidance.</p>
+            <button className="teal-button">Get Help</button>
+          </div>
+        </section>
+      )}
+
+      {activeTab === 'reports' && (
+        <section className="quick-card-grid">
+          <div className="quick-card">
+            <FileText size={38} />
+            <h3>My Sales Report</h3>
+            <p>See your sales by day, week, month, service, and business.</p>
+            <button className="teal-button">View Report</button>
+          </div>
+
+          <div className="quick-card">
+            <ClipboardList size={38} />
+            <h3>My Task Report</h3>
+            <p>Track completed tasks, pending work, and follow-up performance.</p>
+            <button className="teal-button">View Tasks</button>
+          </div>
+
+          <div className="quick-card">
+            <Trophy size={38} />
+            <h3>Contest Report</h3>
+            <p>View your position in the sales contest and what you need to move up.</p>
+            <button className="teal-button">View Contest</button>
+          </div>
         </section>
       )}
     </div>

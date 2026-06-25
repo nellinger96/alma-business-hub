@@ -1365,3 +1365,45 @@ td strong {
     padding: 18px;
   }
 }
+
+/* Usability polish */
+
+.small-action-button {
+  background: #009ad1;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 7px 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.quick-card .teal-button,
+.service-card,
+.sidebar-item,
+.tab-button {
+  transition: 0.15s ease;
+}
+
+.quick-card:hover,
+.service-card:hover,
+.dashboard-stat-card:hover,
+.admin-stat-card:hover,
+.business-summary-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+}
+
+@media (max-width: 800px) {
+  .quick-card-grid {
+    gap: 12px;
+  }
+
+  .quick-card h3 {
+    font-size: 18px;
+  }
+
+  .quick-card p {
+    font-size: 14px;
+  }
+}

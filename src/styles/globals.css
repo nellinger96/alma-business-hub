@@ -2077,3 +2077,17 @@ td strong {
     padding: 16px;
   }
 }
+
+/* Demo feature modal polish */
+
+.demo-modal-head .demo-badge {
+  margin-bottom: 8px;
+}
+
+.demo-modal-head h2 {
+  margin-top: 6px;
+}
+
+.message-preview-box {
+  line-height: 1.6;
+}

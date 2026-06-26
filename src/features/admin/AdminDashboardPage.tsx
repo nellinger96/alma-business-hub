@@ -4,7 +4,6 @@
   BarChart3,
   Building2,
   CalendarDays,
-  ClipboardList,
   Crown,
   DollarSign,
   Eye,
@@ -17,6 +16,7 @@
 } from 'lucide-react'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import { Tabs } from '../../components/ui/Tabs'
+import { DemoFeatureModal } from '../../components/ui/DemoFeatureModal'
 import { LeadProfileModal } from './components/LeadProfileModal'
 import type { WebsiteLead } from '../../types/websiteLead'
 
@@ -37,6 +37,11 @@ type EmployeeRow = {
 export function AdminDashboardPage({ onViewEmployee, websiteLeads, setWebsiteLeads }: Props) {
   const [activeTab, setActiveTab] = useState('overview')
   const [selectedLead, setSelectedLead] = useState<WebsiteLead | null>(null)
+  const [demoFeature, setDemoFeature] = useState<{ title: string; description: string } | null>(null)
+
+  const openDemoFeature = (title: string, description: string) => {
+    setDemoFeature({ title, description })
+  }
 
   const tabs = [
     { id: 'overview', label: 'Overview' },
@@ -173,21 +178,27 @@ export function AdminDashboardPage({ onViewEmployee, websiteLeads, setWebsiteLea
               <MailPlus size={38} />
               <h3>Website Leads Inbox</h3>
               <p>View new quote/help requests from Alianza and Petra websites, then assign them to employees.</p>
-              <button className="teal-button" onClick={() => setActiveTab('website-leads')}>Open Leads</button>
+              <button className="teal-button" onClick={() => setActiveTab('website-leads')}>
+                Open Leads
+              </button>
             </div>
 
             <div className="quick-card">
               <Trophy size={38} />
               <h3>Sales Contest</h3>
               <p>Track monthly winners, employee rankings, and prize goals.</p>
-              <button className="teal-button" onClick={() => setActiveTab('competitions')}>View Contest</button>
+              <button className="teal-button" onClick={() => setActiveTab('competitions')}>
+                View Contest
+              </button>
             </div>
 
             <div className="quick-card">
               <Eye size={38} />
               <h3>View Employee Dashboards</h3>
               <p>Open employee dashboards to see assigned leads, clients, tasks, sales, and reports.</p>
-              <button className="teal-button" onClick={() => setActiveTab('employees')}>View Employees</button>
+              <button className="teal-button" onClick={() => setActiveTab('employees')}>
+                View Employees
+              </button>
             </div>
           </section>
         </>
@@ -318,21 +329,51 @@ export function AdminDashboardPage({ onViewEmployee, websiteLeads, setWebsiteLea
             <Crown size={38} />
             <h3>Current Leader</h3>
             <p>Alma Mora is leading this month with $18,400 in sales.</p>
-            <button className="teal-button">View Ranking</button>
+            <button
+              className="teal-button"
+              onClick={() =>
+                openDemoFeature(
+                  'Sales Contest Ranking',
+                  'This will show live employee rankings by business, service, sales amount, completed files, and monthly contest goals once Supabase is connected.'
+                )
+              }
+            >
+              View Ranking
+            </button>
           </div>
 
           <div className="quick-card">
             <Medal size={38} />
             <h3>Top Employees</h3>
             <p>Rank employees by sales, completed files, referrals, or payment collections.</p>
-            <button className="teal-button">Open Board</button>
+            <button
+              className="teal-button"
+              onClick={() =>
+                openDemoFeature(
+                  'Top Employee Board',
+                  'This will show top employees across Alianza and Petra Insurance, with filters for sales, follow-ups, payment collections, and converted leads.'
+                )
+              }
+            >
+              Open Board
+            </button>
           </div>
 
           <div className="quick-card">
             <Trophy size={38} />
             <h3>Contest Prize</h3>
             <p>Set monthly contest goals and prizes for Alianza and Petra Insurance.</p>
-            <button className="teal-button">Edit Contest</button>
+            <button
+              className="teal-button"
+              onClick={() =>
+                openDemoFeature(
+                  'Edit Monthly Contest',
+                  'This will let Alma create monthly sales contests, set prizes, choose which services count, and track employee performance.'
+                )
+              }
+            >
+              Edit Contest
+            </button>
           </div>
         </section>
       )}
@@ -382,21 +423,51 @@ export function AdminDashboardPage({ onViewEmployee, websiteLeads, setWebsiteLea
             <DollarSign size={38} />
             <h3>Active Payment Plans</h3>
             <p>15 customers currently have active payment plans across both businesses.</p>
-            <button className="teal-button">View Plans</button>
+            <button
+              className="teal-button"
+              onClick={() =>
+                openDemoFeature(
+                  'Active Payment Plans',
+                  'This will show all active payment plans across both businesses, including balance, due date, assigned employee, payment status, and follow-up notes.'
+                )
+              }
+            >
+              View Plans
+            </button>
           </div>
 
           <div className="quick-card">
             <AlertCircle size={38} />
             <h3>Late Payments</h3>
             <p>3 payment plans need follow-up this week.</p>
-            <button className="teal-button">Follow Up</button>
+            <button
+              className="teal-button"
+              onClick={() =>
+                openDemoFeature(
+                  'Late Payment Follow-up',
+                  'This will help Alma or employees follow up with clients who have late payments using reminders, notes, and payment status tracking.'
+                )
+              }
+            >
+              Follow Up
+            </button>
           </div>
 
           <div className="quick-card">
             <CalendarDays size={38} />
             <h3>Upcoming Payments</h3>
             <p>See what payments are due today, this week, or this month.</p>
-            <button className="teal-button">Open Calendar</button>
+            <button
+              className="teal-button"
+              onClick={() =>
+                openDemoFeature(
+                  'Payment Calendar',
+                  'This will show upcoming payment due dates, client reminders, birthdays, appointments, and follow-up tasks in one calendar view.'
+                )
+              }
+            >
+              Open Calendar
+            </button>
           </div>
         </section>
       )}
@@ -407,21 +478,51 @@ export function AdminDashboardPage({ onViewEmployee, websiteLeads, setWebsiteLea
             <BarChart3 size={38} />
             <h3>All Business Reports</h3>
             <p>View Alianza, Petra Insurance, or combined reports.</p>
-            <button className="teal-button">Open Reports</button>
+            <button
+              className="teal-button"
+              onClick={() =>
+                openDemoFeature(
+                  'All Business Reports',
+                  'This will show combined and separate reports for Alianza and Petra Insurance, including leads, sales, payment plans, employee activity, and service performance.'
+                )
+              }
+            >
+              Open Reports
+            </button>
           </div>
 
           <div className="quick-card">
             <FileText size={38} />
             <h3>Employee Reports</h3>
             <p>Sales, clients, tasks, payment plans, and performance by employee.</p>
-            <button className="teal-button">View Reports</button>
+            <button
+              className="teal-button"
+              onClick={() =>
+                openDemoFeature(
+                  'Employee Reports',
+                  'This will show performance by employee, including assigned leads, converted clients, sales, completed tasks, notes, and follow-up activity.'
+                )
+              }
+            >
+              View Reports
+            </button>
           </div>
 
           <div className="quick-card">
             <Activity size={38} />
             <h3>Activity Logs</h3>
             <p>Track who created, edited, uploaded, assigned, or completed work.</p>
-            <button className="teal-button">View Logs</button>
+            <button
+              className="teal-button"
+              onClick={() =>
+                openDemoFeature(
+                  'Activity Logs',
+                  'This will track who created, edited, assigned, uploaded, followed up, converted, or completed work inside the system.'
+                )
+              }
+            >
+              View Logs
+            </button>
           </div>
         </section>
       )}
@@ -444,6 +545,14 @@ export function AdminDashboardPage({ onViewEmployee, websiteLeads, setWebsiteLea
           onClose={() => setSelectedLead(null)}
           onAssign={assignLead}
           onStatusChange={updateLeadStatus}
+        />
+      )}
+
+      {demoFeature && (
+        <DemoFeatureModal
+          title={demoFeature.title}
+          description={demoFeature.description}
+          onClose={() => setDemoFeature(null)}
         />
       )}
     </div>

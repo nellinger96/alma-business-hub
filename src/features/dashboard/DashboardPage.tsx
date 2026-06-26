@@ -22,6 +22,7 @@
 } from 'lucide-react'
 import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react'
 import { Tabs } from '../../components/ui/Tabs'
+import { DemoFeatureModal } from '../../components/ui/DemoFeatureModal'
 import { ClientProfileModal } from './components/ClientProfileModal'
 import type { WebsiteLead } from '../../types/websiteLead'
 
@@ -52,6 +53,7 @@ export function DashboardPage({
   const [activeTab, setActiveTab] = useState(initialTab || 'home')
   const [completedTasks, setCompletedTasks] = useState<string[]>([])
   const [messagePreview, setMessagePreview] = useState<{ title: string; body: string } | null>(null)
+  const [demoFeature, setDemoFeature] = useState<{ title: string; description: string } | null>(null)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [clientSearch, setClientSearch] = useState('')
   const [noteText, setNoteText] = useState('')
@@ -66,6 +68,10 @@ export function DashboardPage({
 
   const isPetra = activeBusiness === 'Petra Insurance'
   const isAlmaView = activeEmployeeName === 'Alma Admin' || activeEmployeeName === 'Alma Mora'
+
+  const openDemoFeature = (title: string, description: string) => {
+    setDemoFeature({ title, description })
+  }
 
   const assignedLeads = websiteLeads.filter((lead) => {
     const belongsToBusiness = lead.business === activeBusiness
@@ -428,21 +434,51 @@ export function DashboardPage({
             <Handshake size={38} />
             <h3>My Sales Completed</h3>
             <p>Track completed sales for the selected business.</p>
-            <button className="teal-button">View Sales</button>
+            <button
+              className="teal-button"
+              onClick={() =>
+                openDemoFeature(
+                  'My Sales Completed',
+                  'This will show the employee’s completed sales, service type, amount, date, status, and commission/performance once connected to Supabase.'
+                )
+              }
+            >
+              View Sales
+            </button>
           </div>
 
           <div className="quick-card">
             <Trophy size={38} />
             <h3>Sales Contest</h3>
             <p>You are currently ranked #2 this month. Close $1,200 more to reach #1.</p>
-            <button className="teal-button">View Contest</button>
+            <button
+              className="teal-button"
+              onClick={() =>
+                openDemoFeature(
+                  'My Sales Contest',
+                  'This will show the employee’s ranking, monthly goal, prize progress, and how much more they need to reach the next position.'
+                )
+              }
+            >
+              View Contest
+            </button>
           </div>
 
           <div className="quick-card">
             <ClipboardList size={38} />
             <h3>Pending Sales</h3>
             <p>Follow up with clients who are close to closing.</p>
-            <button className="teal-button">Open Follow-ups</button>
+            <button
+              className="teal-button"
+              onClick={() =>
+                openDemoFeature(
+                  'Pending Sales Follow-ups',
+                  'This will show leads and clients who are close to closing, need a call back, need missing documents, or need payment follow-up.'
+                )
+              }
+            >
+              Open Follow-ups
+            </button>
           </div>
         </section>
       )}
@@ -453,21 +489,35 @@ export function DashboardPage({
             <CalendarDays size={38} />
             <h3>Upcoming Payments</h3>
             <p>3 payment plans are due this week.</p>
-            <button className="teal-button">View Calendar</button>
+            <button
+              className="teal-button"
+              onClick={() =>
+                openDemoFeature(
+                  'Upcoming Payments',
+                  'This will show upcoming payment due dates, payment plan status, reminders, and follow-up notes for assigned clients.'
+                )
+              }
+            >
+              View Calendar
+            </button>
           </div>
 
           <div className="quick-card">
             <AlertCircle size={38} />
             <h3>Late Payments</h3>
             <p>1 customer needs a payment reminder today.</p>
-            <button className="teal-button" onClick={openPromoText}>Send Reminder</button>
+            <button className="teal-button" onClick={openPromoText}>
+              Send Reminder
+            </button>
           </div>
 
           <div className="quick-card">
             <Calculator size={38} />
             <h3>Payment Plan Calculator</h3>
             <p>Use the calculator inside Tools to estimate monthly payments.</p>
-            <button className="teal-button" onClick={() => setActiveTab('tools')}>Open Calculator</button>
+            <button className="teal-button" onClick={() => setActiveTab('tools')}>
+              Open Calculator
+            </button>
           </div>
         </section>
       )}
@@ -482,7 +532,19 @@ export function DashboardPage({
               <FileText size={38} />
               <h3>{item}</h3>
               <p>Open and review files related to your assigned clients.</p>
-              <button className="teal-button">View</button>
+              <button
+                className="teal-button"
+                onClick={() =>
+                  openDemoFeature(
+                    item,
+                    isPetra
+                      ? 'This will open Petra Insurance client files, policies, applications, beneficiary information, notes, and uploaded documents.'
+                      : 'This will open Alianza customer files, tax documents, filing receipts, IDs, notes, and uploaded paperwork.'
+                  )
+                }
+              >
+                View
+              </button>
             </div>
           ))}
         </section>
@@ -494,21 +556,27 @@ export function DashboardPage({
             <Gift size={38} />
             <h3>Happy Birthday Text</h3>
             <p>Send birthday messages to clients with upcoming birthdays.</p>
-            <button className="teal-button" onClick={() => openBirthdayText(clients[0].name)}>Preview Text</button>
+            <button className="teal-button" onClick={() => openBirthdayText(clients[0].name)}>
+              Preview Text
+            </button>
           </div>
 
           <div className="quick-card">
             <MessageSquareText size={38} />
             <h3>Promo Coupons</h3>
             <p>Text clients promo coupons and seasonal offers.</p>
-            <button className="teal-button" onClick={openPromoText}>Create Promo</button>
+            <button className="teal-button" onClick={openPromoText}>
+              Create Promo
+            </button>
           </div>
 
           <div className="quick-card">
             <AlertCircle size={38} />
             <h3>Service Reminders</h3>
             <p>Remind clients about documents, payments, appointments, or renewals.</p>
-            <button className="teal-button" onClick={openPromoText}>Send Reminder</button>
+            <button className="teal-button" onClick={openPromoText}>
+              Send Reminder
+            </button>
           </div>
         </section>
       )}
@@ -548,7 +616,9 @@ export function DashboardPage({
               placeholder="Add a note for this client or follow-up..."
             />
 
-            <button className="primary-button full" onClick={addNote}>Add Note</button>
+            <button className="primary-button full" onClick={addNote}>
+              Add Note
+            </button>
 
             <div className="notes-list">
               {notes.map((note, index) => (
@@ -567,7 +637,17 @@ export function DashboardPage({
 
             <p>Quick internal help area for scripts, workflows, training, and questions.</p>
 
-            <button className="teal-button">Open Help Center</button>
+            <button
+              className="teal-button"
+              onClick={() =>
+                openDemoFeature(
+                  'Internal Help Center',
+                  'This will include training scripts, how-to guides, service workflows, sales scripts, FAQs, and internal help for employees.'
+                )
+              }
+            >
+              Open Help Center
+            </button>
           </div>
         </section>
       )}
@@ -579,14 +659,34 @@ export function DashboardPage({
             <h3>Today</h3>
             <p>10:00 AM - Follow up with client</p>
             <p>1:30 PM - Payment plan reminder</p>
-            <button className="teal-button">Add Event</button>
+            <button
+              className="teal-button"
+              onClick={() =>
+                openDemoFeature(
+                  'Add Calendar Event',
+                  'This will let employees create appointments, follow-up reminders, payment reminders, birthdays, and document deadlines.'
+                )
+              }
+            >
+              Add Event
+            </button>
           </div>
 
           <div className="quick-card">
             <AlertCircle size={38} />
             <h3>Upcoming</h3>
             <p>3 birthdays, 2 payment reminders, and 4 file follow-ups this week.</p>
-            <button className="teal-button">View Week</button>
+            <button
+              className="teal-button"
+              onClick={() =>
+                openDemoFeature(
+                  'Weekly Calendar View',
+                  'This will show the employee’s weekly follow-ups, payment reminders, client appointments, birthdays, and pending tasks.'
+                )
+              }
+            >
+              View Week
+            </button>
           </div>
         </section>
       )}
@@ -597,21 +697,51 @@ export function DashboardPage({
             <FileText size={38} />
             <h3>My Sales Report</h3>
             <p>See your sales by day, week, month, service, and business.</p>
-            <button className="teal-button">View Report</button>
+            <button
+              className="teal-button"
+              onClick={() =>
+                openDemoFeature(
+                  'My Sales Report',
+                  'This will show this employee’s sales by day, week, month, business, service, and conversion status.'
+                )
+              }
+            >
+              View Report
+            </button>
           </div>
 
           <div className="quick-card">
             <ClipboardList size={38} />
             <h3>My Task Report</h3>
             <p>Track completed tasks, pending work, and follow-up performance.</p>
-            <button className="teal-button">View Tasks</button>
+            <button
+              className="teal-button"
+              onClick={() =>
+                openDemoFeature(
+                  'My Task Report',
+                  'This will show completed tasks, pending tasks, missed follow-ups, client notes, and daily productivity.'
+                )
+              }
+            >
+              View Tasks
+            </button>
           </div>
 
           <div className="quick-card">
             <Trophy size={38} />
             <h3>Contest Report</h3>
             <p>View your position in the sales contest and what you need to move up.</p>
-            <button className="teal-button">View Contest</button>
+            <button
+              className="teal-button"
+              onClick={() =>
+                openDemoFeature(
+                  'Contest Report',
+                  'This will show the employee’s contest ranking, sales progress, monthly goals, and prize status.'
+                )
+              }
+            >
+              View Contest
+            </button>
           </div>
         </section>
       )}
@@ -624,6 +754,14 @@ export function DashboardPage({
           onClose={() => setSelectedClient(null)}
           onBirthdayText={openBirthdayText}
           onPromoText={openPromoText}
+        />
+      )}
+
+      {demoFeature && (
+        <DemoFeatureModal
+          title={demoFeature.title}
+          description={demoFeature.description}
+          onClose={() => setDemoFeature(null)}
         />
       )}
 
@@ -642,8 +780,12 @@ export function DashboardPage({
             </div>
 
             <div className="modal-actions">
-              <button className="secondary-button" onClick={() => setMessagePreview(null)}>Cancel</button>
-              <button className="primary-button" onClick={() => setMessagePreview(null)}>Demo Send</button>
+              <button className="secondary-button" onClick={() => setMessagePreview(null)}>
+                Cancel
+              </button>
+              <button className="primary-button" onClick={() => setMessagePreview(null)}>
+                Demo Send
+              </button>
             </div>
           </div>
         </div>

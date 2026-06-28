@@ -48,7 +48,26 @@ export async function getCurrentProfile(): Promise<NexoProfile | null> {
 }
 
 export async function loginWithEmail(email: string, password: string) {
-  await account.createEmailPasswordSession(email, password)
+  const cleanEmail = email.trim().toLowerCase()
+
+  const existingUser = await getCurrentUser()
+
+  if (existingUser) {
+    const existingEmail = existingUser.email?.toLowerCase()
+
+    if (existingEmail === cleanEmail) {
+      const profile = await getCurrentProfile()
+      return { user: existingUser, profile }
+    }
+
+    try {
+      await account.deleteSession('current')
+    } catch {
+      // Ignore session cleanup error.
+    }
+  }
+
+  await account.createEmailPasswordSession(cleanEmail, password)
 
   const user = await account.get()
   const profile = await getCurrentProfile()
@@ -57,14 +76,23 @@ export async function loginWithEmail(email: string, password: string) {
 }
 
 export async function registerEmployeeRequest(payload: RegisterPayload) {
+  try {
+    await account.deleteSession('current')
+  } catch {
+    // Ignore if no session exists.
+  }
+
   const user = await account.create(
     ID.unique(),
-    payload.email,
+    payload.email.trim().toLowerCase(),
     payload.password,
     payload.fullName
   )
 
-  await account.createEmailPasswordSession(payload.email, payload.password)
+  await account.createEmailPasswordSession(
+    payload.email.trim().toLowerCase(),
+    payload.password
+  )
 
   const profile = await databases.createDocument(
     APPWRITE_DATABASE_ID,
@@ -73,7 +101,7 @@ export async function registerEmployeeRequest(payload: RegisterPayload) {
     {
       user_id: user.$id,
       full_name: payload.fullName,
-      email: payload.email,
+      email: payload.email.trim().toLowerCase(),
       phone: payload.phone ?? '',
       role: 'employee',
       status: 'pending',
@@ -86,5 +114,9 @@ export async function registerEmployeeRequest(payload: RegisterPayload) {
 }
 
 export async function logout() {
-  await account.deleteSession('current')
+  try {
+    await account.deleteSession('current')
+  } catch {
+    // Ignore if already logged out.
+  }
 }

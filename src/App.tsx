@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { AppLayout } from './components/layout/AppLayout'
 import { AuthPage } from './features/auth/AuthPage'
 import { PendingApprovalPage } from './features/auth/PendingApprovalPage'
@@ -10,13 +10,25 @@ import { AdminDashboardPage } from './features/admin/AdminDashboardPage'
 import type { WebsiteLead } from './types/websiteLead'
 import type { DemoUser } from './types/demoUser'
 import type { NexoProfile } from './services/authService'
-import { logout as appwriteLogout } from './services/authService'
+import {
+  getCurrentProfile,
+  logout as appwriteLogout
+} from './services/authService'
 import { listWebsiteLeads } from './services/leadService'
 
 import AlianzaHome from './pages/alianza/AlianzaHome'
 import PetraHome from './pages/petra/PetraHome'
 
-type Screen = 'login' | 'pending' | 'select-business' | 'dashboard' | 'reports' | 'policy-form' | 'admin'
+type Screen =
+  | 'loading'
+  | 'login'
+  | 'pending'
+  | 'select-business'
+  | 'dashboard'
+  | 'reports'
+  | 'policy-form'
+  | 'admin'
+
 type PublicSite = 'alianza' | 'petra' | null
 
 function getPublicSite(): PublicSite {
@@ -153,15 +165,7 @@ function profileToUser(profile: NexoProfile): DemoUser {
 export default function App() {
   const publicSite = getPublicSite()
 
-  if (publicSite === 'alianza') {
-    return <AlianzaHome />
-  }
-
-  if (publicSite === 'petra') {
-    return <PetraHome />
-  }
-
-  const [screen, setScreen] = useState<Screen>('login')
+  const [screen, setScreen] = useState<Screen>('loading')
   const [activeUser, setActiveUser] = useState<DemoUser>(almaUser)
   const [activeProfile, setActiveProfile] = useState<NexoProfile | null>(null)
   const [activeBusiness, setActiveBusiness] = useState<'Alianza' | 'Petra Insurance'>('Alianza')
@@ -181,6 +185,62 @@ export default function App() {
       setWebsiteLeads([])
     }
   }
+
+  useEffect(() => {
+    if (publicSite) return
+
+    let cancelled = false
+
+    const restoreSession = async () => {
+      try {
+        const profile = await getCurrentProfile()
+
+        if (cancelled) return
+
+        if (!profile) {
+          setScreen('login')
+          return
+        }
+
+        setIsDemoMode(false)
+        setWebsiteLeads([])
+        setActiveProfile(profile)
+
+        if (profile.status !== 'active') {
+          setScreen('pending')
+          return
+        }
+
+        const user = profileToUser(profile)
+
+        setActiveUser(user)
+        setActiveBusiness(user.defaultBusiness)
+        setActiveEmployeeName(user.name)
+        setDashboardTab(user.role === 'super_admin' ? 'home' : 'assigned-leads')
+
+        void loadRealWebsiteLeads()
+
+        if (user.role === 'super_admin') {
+          setScreen('select-business')
+          return
+        }
+
+        setScreen('dashboard')
+      } catch (error) {
+        console.error('Could not restore session:', error)
+
+        if (!cancelled) {
+          setScreen('login')
+        }
+      }
+    }
+
+    void restoreSession()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const handleRealLogin = (profile: NexoProfile | null) => {
     setIsDemoMode(false)
@@ -286,6 +346,25 @@ export default function App() {
 
     setDashboardTab('assigned-leads')
     setScreen('dashboard')
+  }
+
+  if (publicSite === 'alianza') {
+    return <AlianzaHome />
+  }
+
+  if (publicSite === 'petra') {
+    return <PetraHome />
+  }
+
+  if (screen === 'loading') {
+    return (
+      <div className="auth-shell">
+        <div className="auth-card">
+          <h1>NEXO OS</h1>
+          <p>Loading your workspace...</p>
+        </div>
+      </div>
+    )
   }
 
   if (screen === 'login') {

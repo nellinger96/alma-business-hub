@@ -1,6 +1,7 @@
 ﻿import { useState } from 'react'
 import { AppLayout } from './components/layout/AppLayout'
-import { LoginPage } from './features/auth/LoginPage'
+import { AuthPage } from './features/auth/AuthPage'
+import { PendingApprovalPage } from './features/auth/PendingApprovalPage'
 import { BusinessSelectPage } from './features/businesses/BusinessSelectPage'
 import { DashboardPage } from './features/dashboard/DashboardPage'
 import { ReportsPage } from './features/reports/ReportsPage'
@@ -8,11 +9,14 @@ import { PolicyFormPage } from './features/policies/PolicyFormPage'
 import { AdminDashboardPage } from './features/admin/AdminDashboardPage'
 import type { WebsiteLead } from './types/websiteLead'
 import type { DemoUser } from './types/demoUser'
+import type { NexoProfile } from './services/authService'
+import { logout as appwriteLogout } from './services/authService'
+import { listWebsiteLeads } from './services/leadService'
 
 import AlianzaHome from './pages/alianza/AlianzaHome'
 import PetraHome from './pages/petra/PetraHome'
 
-type Screen = 'login' | 'select-business' | 'dashboard' | 'reports' | 'policy-form' | 'admin'
+type Screen = 'login' | 'pending' | 'select-business' | 'dashboard' | 'reports' | 'policy-form' | 'admin'
 type PublicSite = 'alianza' | 'petra' | null
 
 function getPublicSite(): PublicSite {
@@ -53,7 +57,7 @@ const almaUser: DemoUser = {
   allowedBusinesses: ['Alianza', 'Petra Insurance']
 }
 
-const initialWebsiteLeads: WebsiteLead[] = [
+const demoWebsiteLeads: WebsiteLead[] = [
   {
     id: 'WL-1001',
     business: 'Alianza',
@@ -108,6 +112,44 @@ const initialWebsiteLeads: WebsiteLead[] = [
   }
 ]
 
+function profileToUser(profile: NexoProfile): DemoUser {
+  const isSuperAdmin = profile.role === 'super_admin'
+
+  let defaultBusiness: 'Alianza' | 'Petra Insurance' = 'Alianza'
+  let allowedBusinesses: Array<'Alianza' | 'Petra Insurance'> = ['Alianza']
+
+  if (isSuperAdmin) {
+    allowedBusinesses = ['Alianza', 'Petra Insurance']
+    defaultBusiness = 'Alianza'
+  } else if (profile.requested_business === 'Petra Insurance') {
+    allowedBusinesses = ['Petra Insurance']
+    defaultBusiness = 'Petra Insurance'
+  } else if (profile.requested_business === 'Both') {
+    allowedBusinesses = ['Alianza', 'Petra Insurance']
+    defaultBusiness = 'Alianza'
+  }
+
+  const roleLabel =
+    profile.role === 'super_admin'
+      ? 'Super Admin'
+      : profile.role === 'admin'
+        ? 'Admin'
+        : profile.role === 'manager'
+          ? 'Manager'
+          : profile.role === 'viewer'
+            ? 'Viewer'
+            : 'Employee'
+
+  return {
+    name: profile.full_name,
+    email: profile.email,
+    role: profile.role,
+    roleLabel,
+    defaultBusiness,
+    allowedBusinesses
+  }
+}
+
 export default function App() {
   const publicSite = getPublicSite()
 
@@ -121,14 +163,63 @@ export default function App() {
 
   const [screen, setScreen] = useState<Screen>('login')
   const [activeUser, setActiveUser] = useState<DemoUser>(almaUser)
+  const [activeProfile, setActiveProfile] = useState<NexoProfile | null>(null)
   const [activeBusiness, setActiveBusiness] = useState<'Alianza' | 'Petra Insurance'>('Alianza')
   const [dashboardTab, setDashboardTab] = useState('home')
   const [activeEmployeeName, setActiveEmployeeName] = useState('Alma Mora')
-  const [websiteLeads, setWebsiteLeads] = useState<WebsiteLead[]>(initialWebsiteLeads)
+  const [websiteLeads, setWebsiteLeads] = useState<WebsiteLead[]>([])
+  const [isDemoMode, setIsDemoMode] = useState(false)
 
-  const canAccessAdmin = activeUser.role === 'super_admin'
+  const canAccessAdmin = activeUser.role === 'super_admin' || activeUser.role === 'admin'
 
-  const handleLogin = (user: DemoUser) => {
+  const loadRealWebsiteLeads = async () => {
+    try {
+      const leads = await listWebsiteLeads()
+      setWebsiteLeads(leads)
+    } catch (error) {
+      console.error('Could not load website leads:', error)
+      setWebsiteLeads([])
+    }
+  }
+
+  const handleRealLogin = (profile: NexoProfile | null) => {
+    setIsDemoMode(false)
+    setWebsiteLeads([])
+    setActiveProfile(profile)
+
+    if (!profile || profile.status !== 'active') {
+      setScreen('pending')
+      return
+    }
+
+    void loadRealWebsiteLeads()
+
+    const user = profileToUser(profile)
+
+    setActiveUser(user)
+    setActiveBusiness(user.defaultBusiness)
+    setActiveEmployeeName(user.name)
+    setDashboardTab(user.role === 'super_admin' ? 'home' : 'assigned-leads')
+
+    if (user.role === 'super_admin') {
+      setScreen('select-business')
+      return
+    }
+
+    setScreen('dashboard')
+  }
+
+  const handlePendingSignup = (profile: NexoProfile | null) => {
+    setIsDemoMode(false)
+    setWebsiteLeads([])
+    setActiveProfile(profile)
+    setScreen('pending')
+  }
+
+  const handleDemoLogin = (user: DemoUser) => {
+    setIsDemoMode(true)
+    setWebsiteLeads(demoWebsiteLeads)
+    setActiveProfile(null)
     setActiveUser(user)
     setActiveBusiness(user.defaultBusiness)
     setActiveEmployeeName(user.name)
@@ -141,6 +232,23 @@ export default function App() {
 
     setDashboardTab('assigned-leads')
     setScreen('dashboard')
+  }
+
+  const handleLogout = async () => {
+    try {
+      await appwriteLogout()
+    } catch {
+      // Demo users may not have an Appwrite session.
+    }
+
+    setIsDemoMode(false)
+    setWebsiteLeads([])
+    setActiveProfile(null)
+    setActiveUser(almaUser)
+    setActiveBusiness('Alianza')
+    setActiveEmployeeName('Alma Mora')
+    setDashboardTab('home')
+    setScreen('login')
   }
 
   const navigateTo = (nextScreen: Screen, nextDashboardTab?: string) => {
@@ -181,7 +289,17 @@ export default function App() {
   }
 
   if (screen === 'login') {
-    return <LoginPage onLogin={handleLogin} />
+    return (
+      <AuthPage
+        onRealLogin={handleRealLogin}
+        onPendingSignup={handlePendingSignup}
+        onDemoLogin={handleDemoLogin}
+      />
+    )
+  }
+
+  if (screen === 'pending') {
+    return <PendingApprovalPage profile={activeProfile} onLogout={handleLogout} />
   }
 
   if (screen === 'select-business') {
@@ -208,7 +326,7 @@ export default function App() {
       allowedBusinesses={activeUser.allowedBusinesses}
       activeScreen={screen}
       navigateTo={navigateTo}
-      onLogout={() => setScreen('login')}
+      onLogout={handleLogout}
       activeUser={activeUser}
       canAccessAdmin={canAccessAdmin}
     >
@@ -217,6 +335,7 @@ export default function App() {
           onViewEmployee={viewEmployeeDashboard}
           websiteLeads={websiteLeads}
           setWebsiteLeads={setWebsiteLeads}
+          isDemoMode={isDemoMode}
         />
       )}
 
@@ -227,11 +346,18 @@ export default function App() {
           initialTab={dashboardTab}
           websiteLeads={websiteLeads}
           setWebsiteLeads={setWebsiteLeads}
+          isDemoMode={isDemoMode}
         />
       )}
 
       {screen === 'reports' && <ReportsPage />}
       {screen === 'policy-form' && <PolicyFormPage />}
+
+      {isDemoMode && (
+        <div className="demo-mode-floating-label">
+          Demo Mode
+        </div>
+      )}
     </AppLayout>
   )
 }

@@ -1,4 +1,4 @@
-﻿export type DemoRole = 'super_admin' | 'manager' | 'employee'
+﻿export type DemoRole = 'super_admin' | 'admin' | 'manager' | 'employee' | 'viewer'
 
 export type DemoUser = {
   name: string

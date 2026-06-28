@@ -57,7 +57,7 @@ export function LoginPage({ onLogin }: Props) {
     <div className="login-page">
       <div className="login-card wide-login-card">
         <div className="login-intro">
-          <h1>Alma Business Hub</h1>
+          <h1>NEXO OS</h1>
           <p>Demo login preview for Alma, managers, and employees.</p>
           <span className="demo-login-note">
             Supabase Auth will replace these demo buttons after employee accounts are created.

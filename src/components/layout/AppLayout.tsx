@@ -77,7 +77,7 @@ export function AppLayout({
           </div>
         </div>
 
-        <div className="brand-mark">Alma Hub</div>
+        <div className="brand-mark">NEXO OS</div>
 
         <div className="topbar-right">
           <span className="demo-badge desktop-only">{activeUser.roleLabel}</span>

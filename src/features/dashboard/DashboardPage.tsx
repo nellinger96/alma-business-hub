@@ -25,6 +25,7 @@ import { Tabs } from '../../components/ui/Tabs'
 import { DemoFeatureModal } from '../../components/ui/DemoFeatureModal'
 import { ClientProfileModal } from './components/ClientProfileModal'
 import type { WebsiteLead } from '../../types/websiteLead'
+import { updateWebsiteLeadStatus as updateWebsiteLeadStatusInAppwrite } from '../../services/leadService'
 
 type Props = {
   activeBusiness: string
@@ -32,6 +33,7 @@ type Props = {
   initialTab: string
   websiteLeads: WebsiteLead[]
   setWebsiteLeads: Dispatch<SetStateAction<WebsiteLead[]>>
+  isDemoMode: boolean
 }
 
 type Client = {
@@ -48,7 +50,8 @@ export function DashboardPage({
   activeEmployeeName,
   initialTab,
   websiteLeads,
-  setWebsiteLeads
+  setWebsiteLeads,
+  isDemoMode
 }: Props) {
   const [activeTab, setActiveTab] = useState(initialTab || 'home')
   const [completedTasks, setCompletedTasks] = useState<string[]>([])
@@ -57,7 +60,7 @@ export function DashboardPage({
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [clientSearch, setClientSearch] = useState('')
   const [noteText, setNoteText] = useState('')
-  const [notes, setNotes] = useState<string[]>(['Called client. Waiting for missing documents.'])
+  const [notes, setNotes] = useState<string[]>(isDemoMode ? ['Called client. Waiting for missing documents.'] : [])
   const [saleAmount, setSaleAmount] = useState('1200')
   const [downPayment, setDownPayment] = useState('200')
   const [months, setMonths] = useState('4')
@@ -159,7 +162,7 @@ export function DashboardPage({
     }
   }
 
-  const updateLeadStatus = (leadId: string, status: WebsiteLead['status']) => {
+  const updateLeadStatus = async (leadId: string, status: WebsiteLead['status']) => {
     setWebsiteLeads((currentLeads) =>
       currentLeads.map((lead) =>
         lead.id === leadId
@@ -170,6 +173,14 @@ export function DashboardPage({
           : lead
       )
     )
+
+    if (!isDemoMode) {
+      try {
+        await updateWebsiteLeadStatusInAppwrite(leadId, status)
+      } catch (error) {
+        console.error('Could not update lead status:', error)
+      }
+    }
   }
 
   const getStatusClass = (status: WebsiteLead['status']) => {
@@ -232,19 +243,19 @@ export function DashboardPage({
             <div className="dashboard-stat-card">
               <Users />
               <span>{isPetra ? 'My Clients' : 'My Customers'}</span>
-              <strong>{isPetra ? '19' : '31'}</strong>
+              <strong>{isDemoMode ? (isPetra ? '19' : '31') : 'Preview'}</strong>
             </div>
 
             <div className="dashboard-stat-card">
               <Handshake />
               <span>My Sales</span>
-              <strong>{isPetra ? '$6.9k' : '$7.8k'}</strong>
+              <strong>{isDemoMode ? (isPetra ? '$6.9k' : '$7.8k') : 'Preview'}</strong>
             </div>
 
             <div className="dashboard-stat-card">
               <Trophy />
               <span>Contest Rank</span>
-              <strong>#2</strong>
+              <strong>{isDemoMode ? '#2' : 'Preview'}</strong>
             </div>
           </section>
 
@@ -350,7 +361,9 @@ export function DashboardPage({
 
                 {assignedLeads.length === 0 && (
                   <tr>
-                    <td colSpan={8}>No assigned leads yet. Assign one from Alma Admin Hub → Website Leads.</td>
+                    <td colSpan={8}>
+                      No assigned leads yet. Assign one from NEXO OS Admin Command Center → Website Leads.
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -364,7 +377,7 @@ export function DashboardPage({
           <div className="directory-header">
             <div>
               <h3>{isPetra ? 'My Client Directory' : 'My Customer Directory'}</h3>
-              <p>Search, open profiles, send texts, review payment plans, and track follow-ups.</p>
+              <p>{isDemoMode ? 'Demo directory preview.' : 'Client directory will connect after real client import/backend setup.'}</p>
             </div>
 
             <div className="directory-search">
@@ -439,7 +452,7 @@ export function DashboardPage({
               onClick={() =>
                 openDemoFeature(
                   'My Sales Completed',
-                  'This will show the employee’s completed sales, service type, amount, date, status, and commission/performance once connected to Supabase.'
+                  'This will show the employee’s completed sales, service type, amount, date, status, and commission/performance once connected to the backend.'
                 )
               }
             >
@@ -450,7 +463,7 @@ export function DashboardPage({
           <div className="quick-card">
             <Trophy size={38} />
             <h3>Sales Contest</h3>
-            <p>You are currently ranked #2 this month. Close $1,200 more to reach #1.</p>
+            <p>{isDemoMode ? 'You are currently ranked #2 this month. Close $1,200 more to reach #1.' : 'Sales contest will activate after sales tracking is connected.'}</p>
             <button
               className="teal-button"
               onClick={() =>
@@ -488,7 +501,7 @@ export function DashboardPage({
           <div className="quick-card">
             <CalendarDays size={38} />
             <h3>Upcoming Payments</h3>
-            <p>3 payment plans are due this week.</p>
+            <p>{isDemoMode ? '3 payment plans are due this week.' : 'Payment data will connect after payment plan backend setup.'}</p>
             <button
               className="teal-button"
               onClick={() =>
@@ -505,7 +518,7 @@ export function DashboardPage({
           <div className="quick-card">
             <AlertCircle size={38} />
             <h3>Late Payments</h3>
-            <p>1 customer needs a payment reminder today.</p>
+            <p>{isDemoMode ? '1 customer needs a payment reminder today.' : 'Late payment alerts will activate after payment data is connected.'}</p>
             <button className="teal-button" onClick={openPromoText}>
               Send Reminder
             </button>
@@ -621,6 +634,12 @@ export function DashboardPage({
             </button>
 
             <div className="notes-list">
+              {notes.length === 0 && (
+                <div className="note-item">
+                  Real notes will save here after notes backend is connected.
+                </div>
+              )}
+
               {notes.map((note, index) => (
                 <div className="note-item" key={`${note}-${index}`}>
                   {note}
@@ -657,8 +676,8 @@ export function DashboardPage({
           <div className="quick-card">
             <CalendarDays size={38} />
             <h3>Today</h3>
-            <p>10:00 AM - Follow up with client</p>
-            <p>1:30 PM - Payment plan reminder</p>
+            <p>{isDemoMode ? '10:00 AM - Follow up with client' : 'Calendar events will connect later.'}</p>
+            <p>{isDemoMode ? '1:30 PM - Payment plan reminder' : 'Appointments, reminders, and tasks will appear here.'}</p>
             <button
               className="teal-button"
               onClick={() =>
@@ -675,7 +694,7 @@ export function DashboardPage({
           <div className="quick-card">
             <AlertCircle size={38} />
             <h3>Upcoming</h3>
-            <p>3 birthdays, 2 payment reminders, and 4 file follow-ups this week.</p>
+            <p>{isDemoMode ? '3 birthdays, 2 payment reminders, and 4 file follow-ups this week.' : 'Upcoming events will appear here after calendar/task setup.'}</p>
             <button
               className="teal-button"
               onClick={() =>

@@ -19,11 +19,16 @@ import { Tabs } from '../../components/ui/Tabs'
 import { DemoFeatureModal } from '../../components/ui/DemoFeatureModal'
 import { LeadProfileModal } from './components/LeadProfileModal'
 import type { WebsiteLead } from '../../types/websiteLead'
+import {
+  assignWebsiteLead as assignWebsiteLeadInAppwrite,
+  updateWebsiteLeadStatus as updateWebsiteLeadStatusInAppwrite
+} from '../../services/leadService'
 
 type Props = {
   onViewEmployee: (employeeName: string, business: string) => void
   websiteLeads: WebsiteLead[]
   setWebsiteLeads: Dispatch<SetStateAction<WebsiteLead[]>>
+  isDemoMode: boolean
 }
 
 type EmployeeRow = {
@@ -34,7 +39,12 @@ type EmployeeRow = {
   clients: number
 }
 
-export function AdminDashboardPage({ onViewEmployee, websiteLeads, setWebsiteLeads }: Props) {
+export function AdminDashboardPage({
+  onViewEmployee,
+  websiteLeads,
+  setWebsiteLeads,
+  isDemoMode
+}: Props) {
   const [activeTab, setActiveTab] = useState('overview')
   const [selectedLead, setSelectedLead] = useState<WebsiteLead | null>(null)
   const [demoFeature, setDemoFeature] = useState<{ title: string; description: string } | null>(null)
@@ -77,7 +87,7 @@ export function AdminDashboardPage({ onViewEmployee, websiteLeads, setWebsiteLea
     }
   }, [websiteLeads])
 
-  const assignLead = (leadId: string, employeeName: string) => {
+  const assignLead = async (leadId: string, employeeName: string) => {
     const nextStatus = employeeName === 'Unassigned' ? 'New' : 'Assigned'
 
     setWebsiteLeads((currentLeads) =>
@@ -101,9 +111,17 @@ export function AdminDashboardPage({ onViewEmployee, websiteLeads, setWebsiteLea
           }
         : currentLead
     )
+
+    if (!isDemoMode) {
+      try {
+        await assignWebsiteLeadInAppwrite(leadId, employeeName)
+      } catch (error) {
+        console.error('Could not assign lead:', error)
+      }
+    }
   }
 
-  const updateLeadStatus = (leadId: string, status: WebsiteLead['status']) => {
+  const updateLeadStatus = async (leadId: string, status: WebsiteLead['status']) => {
     setWebsiteLeads((currentLeads) =>
       currentLeads.map((lead) =>
         lead.id === leadId
@@ -123,6 +141,14 @@ export function AdminDashboardPage({ onViewEmployee, websiteLeads, setWebsiteLea
           }
         : currentLead
     )
+
+    if (!isDemoMode) {
+      try {
+        await updateWebsiteLeadStatusInAppwrite(leadId, status)
+      } catch (error) {
+        console.error('Could not update lead status:', error)
+      }
+    }
   }
 
   const getStatusClass = (status: WebsiteLead['status']) => {
@@ -135,8 +161,8 @@ export function AdminDashboardPage({ onViewEmployee, websiteLeads, setWebsiteLea
   return (
     <div>
       <div className="page-heading">
-        <h1>Alma Admin Hub</h1>
-        <p>Owner dashboard for leads, sales, employees, payment plans, reports, and both businesses.</p>
+        <h1>NEXO OS Admin Command Center</h1>
+        <p>Owner dashboard for Alianza Latina, Petra Insurance, website leads, employees, payment plans, reports, and activity.</p>
       </div>
 
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
@@ -161,15 +187,15 @@ export function AdminDashboardPage({ onViewEmployee, websiteLeads, setWebsiteLea
             <div className="admin-stat-card">
               <DollarSign />
               <span>Total Sales</span>
-              <strong>$38.3k</strong>
-              <small>This month preview</small>
+              <strong>{isDemoMode ? '$38.3k' : '$0'}</strong>
+              <small>{isDemoMode ? 'Demo preview' : 'Real data coming next'}</small>
             </div>
 
             <div className="admin-stat-card">
               <Users />
               <span>Employees</span>
-              <strong>25</strong>
-              <small>5 Alianza + 20 Petra</small>
+              <strong>{isDemoMode ? '25' : '1'}</strong>
+              <small>{isDemoMode ? '5 Alianza + 20 Petra' : 'Alma active'}</small>
             </div>
           </section>
 
@@ -211,7 +237,7 @@ export function AdminDashboardPage({ onViewEmployee, websiteLeads, setWebsiteLea
               <MailPlus />
               <span>Total Leads</span>
               <strong>{leadStats.total}</strong>
-              <small>From public websites</small>
+              <small>{isDemoMode ? 'Demo website leads' : 'From Appwrite'}</small>
             </div>
 
             <div className="admin-stat-card">
@@ -284,6 +310,14 @@ export function AdminDashboardPage({ onViewEmployee, websiteLeads, setWebsiteLea
                       </td>
                     </tr>
                   ))}
+
+                  {websiteLeads.length === 0 && (
+                    <tr>
+                      <td colSpan={8}>
+                        No real website leads yet. Once the Alianza and Petra forms are connected, new submissions will appear here.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -312,7 +346,7 @@ export function AdminDashboardPage({ onViewEmployee, websiteLeads, setWebsiteLea
                     <td>{sale.business}</td>
                     <td>{sale.service}</td>
                     <td>{sale.employee}</td>
-                    <td>{sale.amount}</td>
+                    <td>{isDemoMode ? sale.amount : 'Preview'}</td>
                     <td>{sale.status}</td>
                     <td>{sale.date}</td>
                   </tr>
@@ -328,13 +362,13 @@ export function AdminDashboardPage({ onViewEmployee, websiteLeads, setWebsiteLea
           <div className="quick-card">
             <Crown size={38} />
             <h3>Current Leader</h3>
-            <p>Alma Mora is leading this month with $18,400 in sales.</p>
+            <p>{isDemoMode ? 'Alma Mora is leading this month with $18,400 in sales.' : 'Contest data will activate after sales tracking is connected.'}</p>
             <button
               className="teal-button"
               onClick={() =>
                 openDemoFeature(
                   'Sales Contest Ranking',
-                  'This will show live employee rankings by business, service, sales amount, completed files, and monthly contest goals once Supabase is connected.'
+                  'This will show live employee rankings by business, service, sales amount, completed files, and monthly contest goals once backend sales tracking is connected.'
                 )
               }
             >
@@ -399,8 +433,8 @@ export function AdminDashboardPage({ onViewEmployee, websiteLeads, setWebsiteLea
                     <td>{employee.name}</td>
                     <td>{employee.role}</td>
                     <td>{employee.business}</td>
-                    <td>{employee.sales}</td>
-                    <td>{employee.clients}</td>
+                    <td>{isDemoMode ? employee.sales : 'Preview'}</td>
+                    <td>{isDemoMode ? employee.clients : 'Preview'}</td>
                     <td>
                       <button
                         className="small-action-button"
@@ -422,7 +456,7 @@ export function AdminDashboardPage({ onViewEmployee, websiteLeads, setWebsiteLea
           <div className="quick-card">
             <DollarSign size={38} />
             <h3>Active Payment Plans</h3>
-            <p>15 customers currently have active payment plans across both businesses.</p>
+            <p>{isDemoMode ? '15 customers currently have active payment plans across both businesses.' : 'Payment plans will activate after client/payment tables are connected.'}</p>
             <button
               className="teal-button"
               onClick={() =>
@@ -439,7 +473,7 @@ export function AdminDashboardPage({ onViewEmployee, websiteLeads, setWebsiteLea
           <div className="quick-card">
             <AlertCircle size={38} />
             <h3>Late Payments</h3>
-            <p>3 payment plans need follow-up this week.</p>
+            <p>{isDemoMode ? '3 payment plans need follow-up this week.' : 'Late payment tracking will activate after payment plans are connected.'}</p>
             <button
               className="teal-button"
               onClick={() =>

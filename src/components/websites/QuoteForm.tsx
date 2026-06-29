@@ -1,46 +1,71 @@
-import { useState } from "react";
-import type { WebsiteService } from "../../data/petraServices";
+import { FormEvent, useState } from 'react'
+import type { WebsiteService } from '../../data/petraServices'
+import { createWebsiteLead } from '../../services/leadService'
 
 type QuoteFormProps = {
-  businessName: string;
-  services: WebsiteService[];
-  accent?: "blue" | "emerald" | "amber";
-};
+  businessName: string
+  services: WebsiteService[]
+  accent?: 'blue' | 'emerald' | 'amber'
+}
 
 export default function QuoteForm({
   businessName,
   services,
-  accent = "blue",
+  accent = 'blue'
 }: QuoteFormProps) {
-  const [submitted, setSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   const accentClasses = {
-    blue: "bg-blue-600 hover:bg-blue-700",
-    emerald: "bg-emerald-600 hover:bg-emerald-700",
-    amber: "bg-amber-500 hover:bg-amber-600",
-  };
+    blue: 'bg-blue-600 hover:bg-blue-700',
+    emerald: 'bg-emerald-600 hover:bg-emerald-700',
+    amber: 'bg-amber-500 hover:bg-amber-600'
+  }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const businessKey = businessName.toLowerCase().includes('petra')
+    ? 'petra'
+    : 'alianza'
 
-    const formData = new FormData(event.currentTarget);
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
 
-    const mockLead = {
-      business: businessName,
-      fullName: formData.get("fullName"),
-      phone: formData.get("phone"),
-      email: formData.get("email"),
-      service: formData.get("service"),
-      message: formData.get("message"),
-      status: "New Lead",
-      source: `${businessName} Website`,
-      createdAt: new Date().toISOString(),
-    };
+    const form = event.currentTarget
+    const formData = new FormData(form)
 
-    console.log("Mock lead created:", mockLead);
+    const fullName = String(formData.get('fullName') || '').trim()
+    const phone = String(formData.get('phone') || '').trim()
+    const email = String(formData.get('email') || '').trim()
+    const serviceName = String(formData.get('service') || '').trim()
+    const message = String(formData.get('message') || '').trim()
 
-    setSubmitted(true);
-    event.currentTarget.reset();
+    setSubmitted(false)
+    setErrorMessage('')
+    setIsSubmitting(true)
+
+    try {
+      const lead = await createWebsiteLead({
+        business: businessKey,
+        serviceName,
+        fullName,
+        phone,
+        email,
+        message,
+        source: `${businessName} Website Quote Form`
+      })
+
+      console.log('Real Appwrite lead created:', lead)
+
+      setSubmitted(true)
+      form.reset()
+    } catch (error) {
+      console.error('Could not submit quote request:', error)
+      setErrorMessage(
+        'Something went wrong submitting the request. Please try again or contact the office directly.'
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -57,12 +82,12 @@ export default function QuoteForm({
             </h2>
 
             <p className="mt-4 max-w-xl text-slate-600">
-              Fill out this form and the request will later flow directly into Alma’s internal dashboard as a new lead.
+              Fill out this form and your request will go directly into the NEXO OS dashboard as a new website lead.
             </p>
 
             <div className="mt-6 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-5">
               <p className="text-sm font-semibold text-slate-900">
-                Future software flow:
+                Software flow:
               </p>
               <p className="mt-2 text-sm text-slate-600">
                 Website quote request → New lead → Assigned employee → Follow-up task → Client record.
@@ -76,7 +101,13 @@ export default function QuoteForm({
           >
             {submitted && (
               <div className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-                Request submitted. This is currently mocked until Supabase is connected.
+                Request submitted successfully. Your lead was sent to the NEXO OS dashboard.
+              </div>
+            )}
+
+            {errorMessage && (
+              <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                {errorMessage}
               </div>
             )}
 
@@ -150,13 +181,14 @@ export default function QuoteForm({
 
             <button
               type="submit"
-              className={`mt-6 w-full rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-sm transition ${accentClasses[accent]}`}
+              disabled={isSubmitting}
+              className={`mt-6 w-full rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-70 ${accentClasses[accent]}`}
             >
-              Submit Quote Request
+              {isSubmitting ? 'Submitting...' : 'Submit Quote Request'}
             </button>
           </form>
         </div>
       </div>
     </section>
-  );
+  )
 }

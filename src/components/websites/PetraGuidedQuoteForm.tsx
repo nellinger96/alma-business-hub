@@ -1,19 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
-
-type PetraLead = {
-  need: string;
-  ageRange: string;
-  budget: string;
-  healthComfort: string;
-  contactMethod: string;
-  fullName: string;
-  phone: string;
-  bestTime: string;
-  notes: string;
-  source: string;
-  status: string;
-  createdAt: string;
-};
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { createWebsiteLead } from "../../services/leadService";
 
 const needs = [
   "Seguro de vida",
@@ -27,6 +13,8 @@ export default function PetraGuidedQuoteForm() {
   const [submitted, setSubmitted] = useState(false);
   const [selectedNeed, setSelectedNeed] = useState("");
   const [notes, setNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     function handleServiceSelected(event: Event) {
@@ -49,29 +37,60 @@ export default function PetraGuidedQuoteForm() {
     };
   }, []);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
 
-    const mockLead: PetraLead = {
-      need: selectedNeed || String(formData.get("need") || ""),
-      ageRange: String(formData.get("ageRange") || ""),
-      budget: String(formData.get("budget") || ""),
-      healthComfort: String(formData.get("healthComfort") || ""),
-      contactMethod: String(formData.get("contactMethod") || ""),
-      fullName: String(formData.get("fullName") || ""),
-      phone: String(formData.get("phone") || ""),
-      bestTime: String(formData.get("bestTime") || ""),
-      notes,
-      source: "PETRA Insurance Website",
-      status: "New Lead",
-      createdAt: new Date().toISOString(),
-    };
+    const serviceName = selectedNeed || String(formData.get("need") || "");
+    const ageRange = String(formData.get("ageRange") || "");
+    const budget = String(formData.get("budget") || "");
+    const healthComfort = String(formData.get("healthComfort") || "");
+    const contactMethod = String(formData.get("contactMethod") || "");
+    const fullName = String(formData.get("fullName") || "").trim();
+    const phone = String(formData.get("phone") || "").trim();
+    const bestTime = String(formData.get("bestTime") || "");
 
-    console.log("Mock PETRA lead created:", mockLead);
+    const message = [
+      `Necesidad: ${serviceName}`,
+      `Rango de edad: ${ageRange}`,
+      `Presupuesto mensual cómodo: ${budget}`,
+      `Salud general: ${healthComfort}`,
+      `Método de contacto preferido: ${contactMethod}`,
+      `Mejor hora para contactar: ${bestTime || "No especificado"}`,
+      `Notas: ${notes || "Sin notas adicionales"}`,
+    ].join("\n");
 
-    setSubmitted(true);
+    setSubmitted(false);
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const lead = await createWebsiteLead({
+        business: "petra",
+        serviceName,
+        fullName,
+        phone,
+        email: "",
+        message,
+        source: "PETRA Insurance Website Guided Quote Form",
+      });
+
+      console.log("Real PETRA lead created:", lead);
+
+      setSubmitted(true);
+      setSelectedNeed("");
+      setNotes("");
+      form.reset();
+    } catch (error) {
+      console.error("Could not create PETRA lead:", error);
+      setErrorMessage(
+        "No pudimos enviar tu solicitud en este momento. Intenta otra vez o llama directamente a la oficina."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   if (submitted) {
@@ -94,6 +113,7 @@ export default function PetraGuidedQuoteForm() {
               setSubmitted(false);
               setSelectedNeed("");
               setNotes("");
+              setErrorMessage("");
             }}
             className="mt-8 border border-[#111a16] bg-[#111a16] px-7 py-4 text-xs font-black uppercase tracking-[0.18em] text-white"
           >
@@ -134,6 +154,12 @@ export default function PetraGuidedQuoteForm() {
           </div>
 
           <form onSubmit={handleSubmit} className="border-y border-[#111a16] py-4">
+            {errorMessage && (
+              <div className="mb-5 border border-red-300 bg-red-50 px-5 py-4 text-sm font-bold text-red-700">
+                {errorMessage}
+              </div>
+            )}
+
             <div className="grid gap-0 md:grid-cols-2">
               <FieldBlock label="¿Qué quieres revisar?">
                 <select
@@ -260,9 +286,10 @@ export default function PetraGuidedQuoteForm() {
 
               <button
                 type="submit"
-                className="border border-[#111a16] bg-[#111a16] px-7 py-4 text-xs font-black uppercase tracking-[0.18em] text-white transition hover:border-[#9b672d] hover:bg-[#9b672d]"
+                disabled={isSubmitting}
+                className="border border-[#111a16] bg-[#111a16] px-7 py-4 text-xs font-black uppercase tracking-[0.18em] text-white transition hover:border-[#9b672d] hover:bg-[#9b672d] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                Solicitar orientación
+                {isSubmitting ? "Enviando..." : "Solicitar orientación"}
               </button>
             </div>
           </form>
@@ -277,7 +304,7 @@ function FieldBlock({
   children,
 }: {
   label: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div className="border-b border-[#d8c8b2] px-0 py-6 md:border-r md:px-6 even:md:border-r-0">

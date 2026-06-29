@@ -1,17 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-
-type AlianzaLead = {
-  service: string;
-  urgency: string;
-  contactMethod: string;
-  fullName: string;
-  phone: string;
-  bestTime: string;
-  notes: string;
-  source: string;
-  status: string;
-  createdAt: string;
-};
+import { createWebsiteLead } from "../../services/leadService";
 
 const services = [
   "Taxes / Income Tax",
@@ -31,6 +19,8 @@ const services = [
 export default function AlianzaHelpForm() {
   const [submitted, setSubmitted] = useState(false);
   const [selectedService, setSelectedService] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     function handleServiceSelected(event: Event) {
@@ -45,28 +35,55 @@ export default function AlianzaHelpForm() {
     };
   }, []);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
 
-    const mockLead: AlianzaLead = {
-      service: selectedService || String(formData.get("service") || ""),
-      urgency: String(formData.get("urgency") || ""),
-      contactMethod: String(formData.get("contactMethod") || ""),
-      fullName: String(formData.get("fullName") || ""),
-      phone: String(formData.get("phone") || ""),
-      bestTime: String(formData.get("bestTime") || ""),
-      notes: String(formData.get("notes") || ""),
-      source: "Alianza Latina Website",
-      status: "New Lead",
-      createdAt: new Date().toISOString(),
-    };
+    const serviceName = selectedService || String(formData.get("service") || "");
+    const urgency = String(formData.get("urgency") || "");
+    const contactMethod = String(formData.get("contactMethod") || "");
+    const fullName = String(formData.get("fullName") || "").trim();
+    const phone = String(formData.get("phone") || "").trim();
+    const bestTime = String(formData.get("bestTime") || "");
+    const notes = String(formData.get("notes") || "");
 
-    console.log("Mock Alianza lead created:", mockLead);
+    const message = [
+      `Urgencia: ${urgency}`,
+      `Método de contacto preferido: ${contactMethod}`,
+      `Mejor hora para contactar: ${bestTime || "No especificado"}`,
+      `Notas: ${notes || "Sin notas adicionales"}`,
+    ].join("\n");
 
-    setSubmitted(true);
-    event.currentTarget.reset();
+    setSubmitted(false);
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const lead = await createWebsiteLead({
+        business: "alianza",
+        serviceName,
+        fullName,
+        phone,
+        email: "",
+        message,
+        source: "Alianza Latina Website Help Form",
+      });
+
+      console.log("Real Alianza lead created:", lead);
+
+      setSubmitted(true);
+      setSelectedService("");
+      form.reset();
+    } catch (error) {
+      console.error("Could not create Alianza lead:", error);
+      setErrorMessage(
+        "No pudimos enviar tu solicitud en este momento. Intenta otra vez o llama directamente a la oficina."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   if (submitted) {
@@ -116,7 +133,7 @@ export default function AlianzaHelpForm() {
 
               <p className="mt-6 text-lg leading-8 text-white/75">
                 No tienes que saber el nombre exacto del proceso. Mándanos tu
-                información y te contactamos en español.
+                información and te contactamos en español.
               </p>
 
               <div className="mt-8 rounded-[2rem] bg-white/10 p-6">
@@ -131,6 +148,12 @@ export default function AlianzaHelpForm() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 md:p-8">
+              {errorMessage && (
+                <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                  {errorMessage}
+                </div>
+              )}
+
               <div>
                 <label className="text-sm font-black text-[#07164f]">
                   ¿Con qué necesitas ayuda?
@@ -244,9 +267,10 @@ export default function AlianzaHelpForm() {
 
               <button
                 type="submit"
-                className="mt-7 w-full rounded-full bg-[#f58220] px-6 py-4 text-sm font-black text-white transition hover:bg-[#e87312]"
+                disabled={isSubmitting}
+                className="mt-7 w-full rounded-full bg-[#f58220] px-6 py-4 text-sm font-black text-white transition hover:bg-[#e87312] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                Pedir ayuda
+                {isSubmitting ? "Enviando..." : "Pedir ayuda"}
               </button>
 
               <p className="mt-4 text-center text-xs leading-5 text-[#46506f]">

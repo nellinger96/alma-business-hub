@@ -22,7 +22,21 @@ type AppwriteClientDocument = {
   last_contacted_at?: string
 }
 
-function getBusinessId(business: WebsiteLead['business']) {
+type CreateManualClientPayload = {
+  business: ClientRecord['business']
+  fullName: string
+  phone: string
+  email?: string
+  service: string
+  status?: string
+  source?: string
+  notes?: string
+  birthday?: string
+  assignedTo?: string
+  assignedToName?: string
+}
+
+function getBusinessId(business: WebsiteLead['business'] | ClientRecord['business']) {
   return business === 'Petra Insurance'
     ? APPWRITE_BUSINESS_IDS.petra
     : APPWRITE_BUSINESS_IDS.alianza
@@ -78,10 +92,7 @@ export async function listClients() {
 }
 
 export async function listClientsByBusiness(business: ClientRecord['business']) {
-  const businessId =
-    business === 'Petra Insurance'
-      ? APPWRITE_BUSINESS_IDS.petra
-      : APPWRITE_BUSINESS_IDS.alianza
+  const businessId = getBusinessId(business)
 
   const result = await databases.listDocuments(
     APPWRITE_DATABASE_ID,
@@ -106,7 +117,7 @@ export async function createClientFromLead(lead: WebsiteLead) {
     return mapClient(existing.documents[0] as unknown as AppwriteClientDocument)
   }
 
-  const businessId = getBusinessId(lead)
+  const businessId = getBusinessId(lead.business)
 
   const clientData: Record<string, string> = {
     business_id: businessId,
@@ -123,6 +134,40 @@ export async function createClientFromLead(lead: WebsiteLead) {
   if (lead.email.trim()) {
     clientData.email = lead.email.trim()
   }
+
+  const result = await databases.createDocument(
+    APPWRITE_DATABASE_ID,
+    APPWRITE_TABLES.clients,
+    ID.unique(),
+    clientData
+  )
+
+  return mapClient(result as unknown as AppwriteClientDocument)
+}
+
+export async function createManualClient(payload: CreateManualClientPayload) {
+  const businessId = getBusinessId(payload.business)
+
+  const cleanEmail = payload.email?.trim()
+  const cleanNotes = payload.notes?.trim()
+  const cleanBirthday = payload.birthday?.trim()
+  const cleanAssignedTo = payload.assignedTo?.trim()
+  const cleanAssignedToName = payload.assignedToName?.trim()
+
+  const clientData: Record<string, string> = {
+    business_id: businessId,
+    full_name: payload.fullName.trim(),
+    phone: payload.phone.trim(),
+    service_name: payload.service,
+    status: payload.status || 'active',
+    source: payload.source || 'Manual Entry'
+  }
+
+  if (cleanEmail) clientData.email = cleanEmail
+  if (cleanNotes) clientData.notes = cleanNotes
+  if (cleanBirthday) clientData.birthday = cleanBirthday
+  if (cleanAssignedTo) clientData.assigned_to = cleanAssignedTo
+  if (cleanAssignedToName) clientData.assigned_to_name = cleanAssignedToName
 
   const result = await databases.createDocument(
     APPWRITE_DATABASE_ID,

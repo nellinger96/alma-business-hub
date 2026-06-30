@@ -14,6 +14,7 @@
   Landmark,
   MessageSquareText,
   NotebookText,
+  Plus,
   RefreshCw,
   Search,
   ShieldCheck,
@@ -25,6 +26,7 @@ import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react'
 import { Tabs } from '../../components/ui/Tabs'
 import { DemoFeatureModal } from '../../components/ui/DemoFeatureModal'
 import { ClientProfileModal } from './components/ClientProfileModal'
+import { AddClientModal } from './components/AddClientModal'
 import type { WebsiteLead } from '../../types/websiteLead'
 import type { ClientRecord } from '../../types/client'
 import type { FollowUpTask } from '../../types/workflow'
@@ -69,6 +71,7 @@ export function DashboardPage({
   const [messagePreview, setMessagePreview] = useState<{ title: string; body: string } | null>(null)
   const [demoFeature, setDemoFeature] = useState<{ title: string; description: string } | null>(null)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
+  const [isAddClientOpen, setIsAddClientOpen] = useState(false)
   const [clientSearch, setClientSearch] = useState('')
   const [noteText, setNoteText] = useState('')
   const [notes, setNotes] = useState<string[]>(isDemoMode ? ['Called client. Waiting for missing documents.'] : [])
@@ -560,11 +563,20 @@ export function DashboardPage({
               <p>
                 {isDemoMode
                   ? 'Demo directory preview.'
-                  : 'Live client records created from converted website leads.'}
+                  : 'Live client records from converted leads and manual office entries.'}
               </p>
             </div>
 
             <div className="lead-actions">
+              <button
+                className="small-action-button"
+                onClick={() => setIsAddClientOpen(true)}
+                disabled={isDemoMode}
+              >
+                <Plus size={15} />
+                Add Client
+              </button>
+
               <span className={isDemoMode ? 'preview-data-chip' : 'real-data-chip'}>
                 {isDemoMode ? 'Demo Clients' : 'Live Appwrite Clients'}
               </span>
@@ -640,7 +652,7 @@ export function DashboardPage({
                     <td colSpan={7}>
                       {isDemoMode
                         ? 'No clients found in this demo search.'
-                        : 'No real clients yet. Convert a lead first, then click Refresh.'}
+                        : 'No real clients yet. Convert a lead or add a client manually.'}
                     </td>
                   </tr>
                 )}
@@ -972,6 +984,18 @@ export function DashboardPage({
             </button>
           </div>
         </section>
+      )}
+
+      {isAddClientOpen && (
+        <AddClientModal
+          activeBusiness={activeBusiness}
+          activeEmployeeName={activeEmployeeName}
+          isPetra={isPetra}
+          onClose={() => setIsAddClientOpen(false)}
+          onClientCreated={(newClient) => {
+            setClientRecords((currentClients) => [newClient, ...currentClients])
+          }}
+        />
       )}
 
       {selectedClient && (

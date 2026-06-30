@@ -2446,3 +2446,37 @@ td strong {
     grid-template-columns: 1fr;
   }
 }
+.add-client-modal {
+  max-width: 720px;
+}
+
+.add-client-form {
+  display: grid;
+  gap: 10px;
+}
+
+.add-client-form label {
+  font-size: 13px;
+  font-weight: 900;
+  color: #344054;
+}
+
+.add-client-form input,
+.add-client-form select,
+.add-client-form textarea {
+  width: 100%;
+  border: 1px solid #d8e0ea;
+  border-radius: 14px;
+  background: #fff;
+  color: #101828;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  outline: none;
+}
+
+.add-client-form textarea {
+  min-height: 100px;
+  resize: vertical;
+  font-weight: 600;
+}

@@ -16,6 +16,7 @@
 import { useEffect, useState } from 'react'
 import { APPWRITE_BUSINESS_IDS } from '../../../lib/appwriteConfig'
 import type { ClientNote, FollowUpTask } from '../../../types/workflow'
+import type { PaymentPlan } from '../../../types/payment'
 import {
   completeTask,
   createClientNote,
@@ -23,6 +24,10 @@ import {
   listClientNotes,
   listClientTasks
 } from '../../../services/workflowService'
+import {
+  createPaymentPlan,
+  listClientPaymentPlans
+} from '../../../services/paymentPlanService'
 
 type Client = {
   id: string
@@ -64,6 +69,13 @@ function formatDueDate(value: string) {
   }
 }
 
+function formatMoney(value: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD'
+  }).format(value || 0)
+}
+
 export function ClientProfileModal({
   client,
   activeBusiness,
@@ -76,17 +88,28 @@ export function ClientProfileModal({
 }: Props) {
   const [notes, setNotes] = useState<ClientNote[]>([])
   const [tasks, setTasks] = useState<FollowUpTask[]>([])
+  const [paymentPlans, setPaymentPlans] = useState<PaymentPlan[]>([])
+
   const [noteText, setNoteText] = useState('')
   const [taskTitle, setTaskTitle] = useState('')
   const [taskDescription, setTaskDescription] = useState('')
   const [taskDueDate, setTaskDueDate] = useState('')
   const [taskPriority, setTaskPriority] = useState<FollowUpTask['priority']>('normal')
+
+  const [paymentTotal, setPaymentTotal] = useState(isPetra ? '1200' : '350')
+  const [paymentDown, setPaymentDown] = useState(isPetra ? '200' : '100')
+  const [paymentMonths, setPaymentMonths] = useState('4')
+  const [paymentNextDueDate, setPaymentNextDueDate] = useState('')
+  const [paymentNotes, setPaymentNotes] = useState('')
+
   const [isLoading, setIsLoading] = useState(false)
   const [isSavingNote, setIsSavingNote] = useState(false)
   const [isSavingTask, setIsSavingTask] = useState(false)
+  const [isSavingPayment, setIsSavingPayment] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
   const businessId = getBusinessId(activeBusiness)
+  const currentPaymentPlan = paymentPlans[0]
 
   const loadWorkflow = async () => {
     if (isDemoMode) {
@@ -131,6 +154,27 @@ export function ClientProfileModal({
         }
       ])
 
+      setPaymentPlans([
+        {
+          id: 'demo-payment-1',
+          businessId,
+          clientId: client.id,
+          clientName: client.name,
+          assignedToName: activeEmployeeName,
+          serviceName: client.service,
+          totalAmount: isPetra ? 1200 : 350,
+          downPayment: isPetra ? 200 : 100,
+          balance: isPetra ? 1000 : 250,
+          monthlyPayment: isPetra ? 250 : 125,
+          months: isPetra ? 4 : 2,
+          nextDueDate: '',
+          status: 'active',
+          notes: 'Demo payment plan.',
+          createdByName: activeEmployeeName,
+          createdAt: 'Demo'
+        }
+      ])
+
       return
     }
 
@@ -138,16 +182,18 @@ export function ClientProfileModal({
     setErrorMessage('')
 
     try {
-      const [clientNotes, clientTasks] = await Promise.all([
+      const [clientNotes, clientTasks, clientPaymentPlans] = await Promise.all([
         listClientNotes(client.id),
-        listClientTasks(client.id)
+        listClientTasks(client.id),
+        listClientPaymentPlans(client.id)
       ])
 
       setNotes(clientNotes)
       setTasks(clientTasks)
+      setPaymentPlans(clientPaymentPlans)
     } catch (error) {
       console.error('Could not load client workflow:', error)
-      setErrorMessage('Could not load notes or tasks. Check Appwrite permissions.')
+      setErrorMessage('Could not load notes, tasks, or payment plans. Check Appwrite permissions.')
     } finally {
       setIsLoading(false)
     }
@@ -261,6 +307,115 @@ export function ClientProfileModal({
     }
   }
 
+  const handleCreatePaymentPlan = async () => {
+    const totalAmount = Number(paymentTotal) || 0
+    const downPayment = Number(paymentDown) || 0
+    const months = Math.max(Number(paymentMonths) || 1, 1)
+
+    if (totalAmount <= 0) {
+      setErrorMessage('Total amount must be greater than 0.')
+      return
+    }
+
+    setIsSavingPayment(true)
+    setErrorMessage('')
+
+    const dueDateIso = paymentNextDueDate
+      ? new Date(`${paymentNextDueDate}T09:00:00`).toISOString()
+      : ''
+
+    try {
+      if (isDemoMode) {
+        const balance = Math.max(totalAmount - downPayment, 0)
+        const monthlyPayment = Number((balance / months).toFixed(2))
+
+        const demoPlan: PaymentPlan = {
+          id: `demo-payment-${Date.now()}`,
+          businessId,
+          clientId: client.id,
+          clientName: client.name,
+          assignedToName: activeEmployeeName,
+          serviceName: client.service,
+          totalAmount,
+          downPayment,
+          balance,
+          monthlyPayment,
+          months,
+          nextDueDate: dueDateIso,
+          status: 'active',
+          notes: paymentNotes.trim(),
+          createdByName: activeEmployeeName,
+          createdAt: 'Just now'
+        }
+
+        setPaymentPlans((current) => [demoPlan, ...current])
+
+        if (dueDateIso) {
+          const demoTask: FollowUpTask = {
+            id: `demo-payment-task-${Date.now()}`,
+            businessId,
+            clientId: client.id,
+            leadId: '',
+            assignedTo: '',
+            assignedToName: activeEmployeeName,
+            title: `Payment due for ${client.name}`,
+            description: `Payment plan reminder. Monthly payment: ${formatMoney(monthlyPayment)}.`,
+            dueDate: dueDateIso,
+            status: 'open',
+            priority: 'high',
+            createdBy: '',
+            createdByName: activeEmployeeName,
+            completedAt: '',
+            createdAt: 'Just now'
+          }
+
+          setTasks((current) => [demoTask, ...current])
+        }
+
+        setPaymentNotes('')
+        return
+      }
+
+      const newPaymentPlan = await createPaymentPlan({
+        businessId,
+        clientId: client.id,
+        clientName: client.name,
+        assignedToName: activeEmployeeName,
+        serviceName: client.service,
+        totalAmount,
+        downPayment,
+        months,
+        nextDueDate: dueDateIso,
+        notes: paymentNotes,
+        createdByName: activeEmployeeName
+      })
+
+      setPaymentPlans((current) => [newPaymentPlan, ...current])
+
+      if (dueDateIso) {
+        const reminderTask = await createFollowUpTask({
+          businessId,
+          clientId: client.id,
+          assignedToName: activeEmployeeName,
+          title: `Payment due for ${client.name}`,
+          description: `Payment plan reminder. Monthly payment: ${formatMoney(newPaymentPlan.monthlyPayment)}.`,
+          dueDate: dueDateIso,
+          priority: 'high',
+          createdByName: activeEmployeeName
+        })
+
+        setTasks((current) => [reminderTask, ...current])
+      }
+
+      setPaymentNotes('')
+    } catch (error) {
+      console.error('Could not create payment plan:', error)
+      setErrorMessage('Could not create payment plan. Check Appwrite permissions.')
+    } finally {
+      setIsSavingPayment(false)
+    }
+  }
+
   const handleCompleteTask = async (taskId: string) => {
     setErrorMessage('')
 
@@ -344,6 +499,129 @@ export function ClientProfileModal({
         </div>
 
         <div className="client-profile-sections">
+          <section className="client-section-card">
+            <div className="client-section-title">
+              <DollarSign />
+              <h3>Payment Plan</h3>
+            </div>
+
+            <div className="payment-preview">
+              <div>
+                <span>Total Balance</span>
+                <strong>
+                  {currentPaymentPlan ? formatMoney(currentPaymentPlan.totalAmount) : 'None'}
+                </strong>
+              </div>
+
+              <div>
+                <span>Down Payment</span>
+                <strong>
+                  {currentPaymentPlan ? formatMoney(currentPaymentPlan.downPayment) : 'None'}
+                </strong>
+              </div>
+
+              <div>
+                <span>Monthly</span>
+                <strong>
+                  {currentPaymentPlan ? `${formatMoney(currentPaymentPlan.monthlyPayment)}/mo` : 'None'}
+                </strong>
+              </div>
+
+              <div>
+                <span>Next Due</span>
+                <strong>
+                  {currentPaymentPlan ? formatDueDate(currentPaymentPlan.nextDueDate) : 'None'}
+                </strong>
+              </div>
+            </div>
+
+            <div className="add-client-form" style={{ marginTop: 16 }}>
+              <div className="workflow-form-row">
+                <div>
+                  <label>Total Amount</label>
+                  <input
+                    value={paymentTotal}
+                    onChange={(event) => setPaymentTotal(event.target.value)}
+                    placeholder="1200"
+                  />
+                </div>
+
+                <div>
+                  <label>Down Payment</label>
+                  <input
+                    value={paymentDown}
+                    onChange={(event) => setPaymentDown(event.target.value)}
+                    placeholder="200"
+                  />
+                </div>
+              </div>
+
+              <div className="workflow-form-row">
+                <div>
+                  <label>Months</label>
+                  <input
+                    value={paymentMonths}
+                    onChange={(event) => setPaymentMonths(event.target.value)}
+                    placeholder="4"
+                  />
+                </div>
+
+                <div>
+                  <label>Next Due Date</label>
+                  <input
+                    type="date"
+                    value={paymentNextDueDate}
+                    onChange={(event) => setPaymentNextDueDate(event.target.value)}
+                  />
+                </div>
+              </div>
+
+              <label>Payment Notes</label>
+              <textarea
+                value={paymentNotes}
+                onChange={(event) => setPaymentNotes(event.target.value)}
+                placeholder="Example: Client paid deposit today. First payment due next month."
+              />
+            </div>
+
+            <button
+              className="primary-button full"
+              onClick={handleCreatePaymentPlan}
+              disabled={isSavingPayment}
+            >
+              <Plus size={16} />
+              {isSavingPayment ? 'Creating...' : 'Create Payment Plan'}
+            </button>
+
+            <div className="mini-file-list workflow-list">
+              {isLoading && <p>Loading payment plans...</p>}
+
+              {!isLoading && paymentPlans.length === 0 && (
+                <p>No payment plans yet. Create one for this client.</p>
+              )}
+
+              {paymentPlans.map((plan) => (
+                <div className="workflow-item" key={plan.id}>
+                  <div className="workflow-item-head">
+                    <strong>{formatMoney(plan.balance)} balance</strong>
+                    <span className="status-pill active">{plan.status}</span>
+                  </div>
+
+                  <p>
+                    {formatMoney(plan.monthlyPayment)}/mo for {plan.months} months.
+                    Down payment: {formatMoney(plan.downPayment)}.
+                  </p>
+
+                  <small>
+                    Next due: {formatDueDate(plan.nextDueDate)} • Created by {plan.createdByName}
+                  </small>
+
+                  {plan.notes && <p>{plan.notes}</p>}
+                </div>
+              ))}
+            </div>
+          </section>
+
           <section className="client-section-card">
             <div className="client-section-title">
               <NotebookText />
@@ -479,35 +757,6 @@ export function ClientProfileModal({
 
           <section className="client-section-card">
             <div className="client-section-title">
-              <DollarSign />
-              <h3>Payment Plan</h3>
-            </div>
-
-            <div className="payment-preview">
-              <div>
-                <span>Total Balance</span>
-                <strong>{isPetra ? '$1,200' : '$350'}</strong>
-              </div>
-
-              <div>
-                <span>Down Payment</span>
-                <strong>{isPetra ? '$200' : '$100'}</strong>
-              </div>
-
-              <div>
-                <span>Monthly</span>
-                <strong>{isPetra ? '$250/mo' : '$125/mo'}</strong>
-              </div>
-
-              <div>
-                <span>Next Due</span>
-                <strong>Coming Next</strong>
-              </div>
-            </div>
-          </section>
-
-          <section className="client-section-card">
-            <div className="client-section-title">
               <FileText />
               <h3>{isPetra ? 'Policies / Files' : 'Customer Files'}</h3>
             </div>
@@ -532,7 +781,7 @@ export function ClientProfileModal({
 
           <button className="secondary-button" onClick={loadWorkflow}>
             <RefreshCw size={17} />
-            Refresh Notes/Tasks
+            Refresh Client
           </button>
         </div>
       </div>

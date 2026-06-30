@@ -8,7 +8,8 @@ export const APPWRITE_TABLES = {
   websiteLeads: 'website_leads',
   clients: 'clients',
   clientNotes: 'client_notes',
-  tasks: 'tasks'
+  tasks: 'tasks',
+  paymentPlans: 'payment_plans'
 }
 
 export const APPWRITE_BUSINESS_IDS = {

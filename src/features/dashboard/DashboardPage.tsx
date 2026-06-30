@@ -14,6 +14,7 @@
   Landmark,
   MessageSquareText,
   NotebookText,
+  RefreshCw,
   Search,
   ShieldCheck,
   Trophy,
@@ -25,7 +26,17 @@ import { Tabs } from '../../components/ui/Tabs'
 import { DemoFeatureModal } from '../../components/ui/DemoFeatureModal'
 import { ClientProfileModal } from './components/ClientProfileModal'
 import type { WebsiteLead } from '../../types/websiteLead'
+import type { ClientRecord } from '../../types/client'
+import type { FollowUpTask } from '../../types/workflow'
 import { updateWebsiteLeadStatus as updateWebsiteLeadStatusInAppwrite } from '../../services/leadService'
+import {
+  createClientFromLead,
+  listClientsByBusiness
+} from '../../services/clientService'
+import {
+  completeTask,
+  listAssignedOpenTasks
+} from '../../services/workflowService'
 
 type Props = {
   activeBusiness: string
@@ -65,6 +76,14 @@ export function DashboardPage({
   const [downPayment, setDownPayment] = useState('200')
   const [months, setMonths] = useState('4')
 
+  const [clientRecords, setClientRecords] = useState<ClientRecord[]>([])
+  const [isLoadingClients, setIsLoadingClients] = useState(false)
+  const [clientError, setClientError] = useState('')
+
+  const [followUpTasks, setFollowUpTasks] = useState<FollowUpTask[]>([])
+  const [isLoadingTasks, setIsLoadingTasks] = useState(false)
+  const [taskError, setTaskError] = useState('')
+
   useEffect(() => {
     setActiveTab(initialTab || 'home')
   }, [initialTab])
@@ -75,6 +94,55 @@ export function DashboardPage({
   const openDemoFeature = (title: string, description: string) => {
     setDemoFeature({ title, description })
   }
+
+  const loadClients = async () => {
+    if (isDemoMode) return
+
+    setIsLoadingClients(true)
+    setClientError('')
+
+    try {
+      const records = await listClientsByBusiness(
+        activeBusiness as ClientRecord['business']
+      )
+
+      setClientRecords(records)
+    } catch (error) {
+      console.error('Could not load clients:', error)
+      setClientError('Could not load real clients. Check Appwrite client permissions.')
+    } finally {
+      setIsLoadingClients(false)
+    }
+  }
+
+  const loadFollowUpTasks = async () => {
+    if (isDemoMode) return
+
+    setIsLoadingTasks(true)
+    setTaskError('')
+
+    try {
+      const records = await listAssignedOpenTasks(activeEmployeeName)
+      setFollowUpTasks(records)
+    } catch (error) {
+      console.error('Could not load follow-up tasks:', error)
+      setTaskError('Could not load follow-up tasks. Check Appwrite task permissions/indexes.')
+    } finally {
+      setIsLoadingTasks(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!isDemoMode) {
+      void loadClients()
+    }
+  }, [activeBusiness, isDemoMode])
+
+  useEffect(() => {
+    if (!isDemoMode) {
+      void loadFollowUpTasks()
+    }
+  }, [activeEmployeeName, isDemoMode])
 
   const assignedLeads = websiteLeads.filter((lead) => {
     const belongsToBusiness = lead.business === activeBusiness
@@ -114,7 +182,7 @@ export function DashboardPage({
         { label: 'Document Filing', icon: FileCheck2, description: 'Manage document filing customers, paperwork, and completion status.' }
       ]
 
-  const clients: Client[] = isPetra
+  const demoClients: Client[] = isPetra
     ? [
         { id: 'P-1001', name: 'Maria Gonzalez', phone: '(714) 555-1822', service: 'Life Insurance', status: 'Needs Follow-up', birthday: 'June 28' },
         { id: 'P-1002', name: 'Jose Ramirez', phone: '(909) 555-4410', service: 'Pre-Need Funeral Services', status: 'Payment Plan', birthday: 'July 2' },
@@ -127,6 +195,21 @@ export function DashboardPage({
         { id: 'A-2003', name: 'Miguel Torres', phone: '(951) 555-1188', service: 'Tax Services', status: 'Ready to File', birthday: 'July 12' },
         { id: 'A-2004', name: 'Sofia Ramirez', phone: '(626) 555-4031', service: 'Document Filing', status: 'Needs Signature', birthday: 'July 18' }
       ]
+
+  const visibleClientRecords = isAlmaView
+    ? clientRecords
+    : clientRecords.filter((client) => client.assignedToName === activeEmployeeName)
+
+  const realClients: Client[] = visibleClientRecords.map((client) => ({
+    id: client.id,
+    name: client.fullName,
+    phone: client.phone,
+    service: client.service,
+    status: client.status,
+    birthday: client.birthday || 'Not added'
+  }))
+
+  const clients = isDemoMode ? demoClients : realClients
 
   const filteredClients = clients.filter((client) => {
     const search = clientSearch.toLowerCase()
@@ -163,6 +246,8 @@ export function DashboardPage({
   }
 
   const updateLeadStatus = async (leadId: string, status: WebsiteLead['status']) => {
+    const leadToConvert = websiteLeads.find((lead) => lead.id === leadId)
+
     setWebsiteLeads((currentLeads) =>
       currentLeads.map((lead) =>
         lead.id === leadId
@@ -177,9 +262,35 @@ export function DashboardPage({
     if (!isDemoMode) {
       try {
         await updateWebsiteLeadStatusInAppwrite(leadId, status)
+
+        if (status === 'Converted' && leadToConvert) {
+          await createClientFromLead({
+            ...leadToConvert,
+            status: 'Converted'
+          })
+
+          await loadClients()
+        }
       } catch (error) {
-        console.error('Could not update lead status:', error)
+        console.error('Could not update lead status or create client:', error)
       }
+    }
+  }
+
+  const markFollowUpDone = async (taskId: string) => {
+    if (isDemoMode) return
+
+    setTaskError('')
+
+    try {
+      await completeTask(taskId)
+
+      setFollowUpTasks((currentTasks) =>
+        currentTasks.filter((task) => task.id !== taskId)
+      )
+    } catch (error) {
+      console.error('Could not complete follow-up task:', error)
+      setTaskError('Could not mark task complete.')
     }
   }
 
@@ -220,6 +331,8 @@ export function DashboardPage({
     setNoteText('')
   }
 
+  const firstClientName = clients[0]?.name || 'client'
+
   return (
     <div>
       <div className="page-heading">
@@ -243,7 +356,7 @@ export function DashboardPage({
             <div className="dashboard-stat-card">
               <Users />
               <span>{isPetra ? 'My Clients' : 'My Customers'}</span>
-              <strong>{isDemoMode ? (isPetra ? '19' : '31') : 'Preview'}</strong>
+              <strong>{isDemoMode ? (isPetra ? '19' : '31') : clients.length}</strong>
             </div>
 
             <div className="dashboard-stat-card">
@@ -254,8 +367,8 @@ export function DashboardPage({
 
             <div className="dashboard-stat-card">
               <Trophy />
-              <span>Contest Rank</span>
-              <strong>{isDemoMode ? '#2' : 'Preview'}</strong>
+              <span>Open Follow-Ups</span>
+              <strong>{isDemoMode ? '#2' : followUpTasks.length}</strong>
             </div>
           </section>
 
@@ -276,22 +389,89 @@ export function DashboardPage({
           </section>
 
           <section className="task-list">
-            {tasks.map((task) => {
-              const isComplete = completedTasks.includes(task)
+            <div className="table-panel-head">
+              <div>
+                <h3>Today’s Follow-Ups</h3>
+                <p>
+                  {isDemoMode
+                    ? 'Demo daily tasks preview.'
+                    : 'Live open follow-up tasks assigned to this employee.'}
+                </p>
+              </div>
 
-              return (
-                <div className={isComplete ? 'task-item complete' : 'task-item'} key={task}>
+              <div className="lead-actions">
+                <span className={isDemoMode ? 'preview-data-chip' : 'real-data-chip'}>
+                  {isDemoMode ? 'Demo Tasks' : 'Live Tasks'}
+                </span>
+
+                <button
+                  className="small-action-button secondary-small"
+                  onClick={loadFollowUpTasks}
+                  disabled={isDemoMode || isLoadingTasks}
+                >
+                  <RefreshCw size={15} />
+                  {isLoadingTasks ? 'Refreshing...' : 'Refresh'}
+                </button>
+              </div>
+            </div>
+
+            {taskError && (
+              <div className="auth-error" style={{ marginBottom: 16 }}>
+                {taskError}
+              </div>
+            )}
+
+            {isDemoMode &&
+              tasks.map((task) => {
+                const isComplete = completedTasks.includes(task)
+
+                return (
+                  <div className={isComplete ? 'task-item complete' : 'task-item'} key={task}>
+                    <CheckCircle2 />
+                    <div>
+                      <strong>{task}</strong>
+                      <p>{isComplete ? 'Completed in demo mode.' : 'Daily task preview. Click complete to test the workflow.'}</p>
+                    </div>
+                    <button className={isComplete ? 'status-pill active' : 'status-pill pending'} onClick={() => toggleTask(task)}>
+                      {isComplete ? 'Complete' : 'Pending'}
+                    </button>
+                  </div>
+                )
+              })}
+
+            {!isDemoMode &&
+              followUpTasks.map((task) => (
+                <div className="task-item" key={task.id}>
                   <CheckCircle2 />
                   <div>
-                    <strong>{task}</strong>
-                    <p>{isComplete ? 'Completed in demo mode.' : 'Daily task preview. Click complete to test the workflow.'}</p>
+                    <strong>{task.title}</strong>
+                    <p>
+                      {task.description || 'No description added.'}
+                      {task.dueDate ? ` Due: ${new Date(task.dueDate).toLocaleDateString()}` : ' No due date.'}
+                    </p>
+                    <small>
+                      Client ID: {task.clientId || 'Not connected'} • Priority: {task.priority}
+                    </small>
                   </div>
-                  <button className={isComplete ? 'status-pill active' : 'status-pill pending'} onClick={() => toggleTask(task)}>
-                    {isComplete ? 'Complete' : 'Pending'}
+
+                  <button
+                    className="status-pill pending"
+                    onClick={() => markFollowUpDone(task.id)}
+                  >
+                    Mark Done
                   </button>
                 </div>
-              )
-            })}
+              ))}
+
+            {!isDemoMode && !isLoadingTasks && followUpTasks.length === 0 && (
+              <div className="task-item">
+                <CheckCircle2 />
+                <div>
+                  <strong>No open follow-ups yet</strong>
+                  <p>Create a follow-up task from a client profile and it will appear here.</p>
+                </div>
+              </div>
+            )}
           </section>
         </>
       )}
@@ -377,18 +557,43 @@ export function DashboardPage({
           <div className="directory-header">
             <div>
               <h3>{isPetra ? 'My Client Directory' : 'My Customer Directory'}</h3>
-              <p>{isDemoMode ? 'Demo directory preview.' : 'Client directory will connect after real client import/backend setup.'}</p>
+              <p>
+                {isDemoMode
+                  ? 'Demo directory preview.'
+                  : 'Live client records created from converted website leads.'}
+              </p>
             </div>
 
-            <div className="directory-search">
-              <Search size={18} />
-              <input
-                value={clientSearch}
-                onChange={(e) => setClientSearch(e.target.value)}
-                placeholder="Search name, phone, service, status..."
-              />
+            <div className="lead-actions">
+              <span className={isDemoMode ? 'preview-data-chip' : 'real-data-chip'}>
+                {isDemoMode ? 'Demo Clients' : 'Live Appwrite Clients'}
+              </span>
+
+              <button
+                className="small-action-button secondary-small"
+                onClick={loadClients}
+                disabled={isDemoMode || isLoadingClients}
+              >
+                <RefreshCw size={15} />
+                {isLoadingClients ? 'Refreshing...' : 'Refresh'}
+              </button>
+
+              <div className="directory-search">
+                <Search size={18} />
+                <input
+                  value={clientSearch}
+                  onChange={(e) => setClientSearch(e.target.value)}
+                  placeholder="Search name, phone, service, status..."
+                />
+              </div>
             </div>
           </div>
+
+          {clientError && (
+            <div className="auth-error" style={{ marginBottom: 16 }}>
+              {clientError}
+            </div>
+          )}
 
           <div className="table-scroll">
             <table>
@@ -432,7 +637,11 @@ export function DashboardPage({
 
                 {filteredClients.length === 0 && (
                   <tr>
-                    <td colSpan={7}>No clients found in this demo search.</td>
+                    <td colSpan={7}>
+                      {isDemoMode
+                        ? 'No clients found in this demo search.'
+                        : 'No real clients yet. Convert a lead first, then click Refresh.'}
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -569,7 +778,7 @@ export function DashboardPage({
             <Gift size={38} />
             <h3>Happy Birthday Text</h3>
             <p>Send birthday messages to clients with upcoming birthdays.</p>
-            <button className="teal-button" onClick={() => openBirthdayText(clients[0].name)}>
+            <button className="teal-button" onClick={() => openBirthdayText(firstClientName)}>
               Preview Text
             </button>
           </div>
@@ -769,7 +978,9 @@ export function DashboardPage({
         <ClientProfileModal
           client={selectedClient}
           activeBusiness={activeBusiness}
+          activeEmployeeName={activeEmployeeName}
           isPetra={isPetra}
+          isDemoMode={isDemoMode}
           onClose={() => setSelectedClient(null)}
           onBirthdayText={openBirthdayText}
           onPromoText={openPromoText}

@@ -5,7 +5,10 @@ export const APPWRITE_TABLES = {
   businesses: 'businesses',
   businessMembers: 'business_members',
   services: 'services',
-  websiteLeads: 'website_leads'
+  websiteLeads: 'website_leads',
+  clients: 'clients',
+  clientNotes: 'client_notes',
+  tasks: 'tasks'
 }
 
 export const APPWRITE_BUSINESS_IDS = {

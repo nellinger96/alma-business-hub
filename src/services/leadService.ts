@@ -80,22 +80,33 @@ export async function createWebsiteLead(payload: CreateWebsiteLeadPayload) {
       ? APPWRITE_BUSINESS_IDS.petra
       : APPWRITE_BUSINESS_IDS.alianza
 
+  const cleanEmail = payload.email?.trim()
+  const cleanMessage = payload.message?.trim()
+
+  const leadData: Record<string, string> = {
+    business_id: businessId,
+    service_name: payload.serviceName,
+    full_name: payload.fullName,
+    phone: payload.phone,
+    source: payload.source,
+    status: 'new'
+  }
+
+  if (cleanEmail) {
+    leadData.email = cleanEmail
+  }
+
+  if (cleanMessage) {
+    leadData.message = cleanMessage
+  }
+
+  console.log('Creating website lead in Appwrite:', leadData)
+
   const result = await databases.createDocument(
     APPWRITE_DATABASE_ID,
     APPWRITE_TABLES.websiteLeads,
     ID.unique(),
-    {
-      business_id: businessId,
-      service_name: payload.serviceName,
-      full_name: payload.fullName,
-      phone: payload.phone,
-      email: payload.email ?? '',
-      message: payload.message ?? '',
-      source: payload.source,
-      status: 'new',
-      assigned_to: '',
-      assigned_to_name: ''
-    }
+    leadData
   )
 
   return mapLead(result as unknown as AppwriteLeadDocument)
@@ -134,15 +145,23 @@ export async function assignWebsiteLead(
 ) {
   const nextStatus = employeeName === 'Unassigned' ? 'new' : 'assigned'
 
+  const updateData: Record<string, string> = {
+    status: nextStatus
+  }
+
+  if (employeeName !== 'Unassigned') {
+    updateData.assigned_to_name = employeeName
+  }
+
+  if (employeeUserId) {
+    updateData.assigned_to = employeeUserId
+  }
+
   const result = await databases.updateDocument(
     APPWRITE_DATABASE_ID,
     APPWRITE_TABLES.websiteLeads,
     leadId,
-    {
-      assigned_to: employeeUserId,
-      assigned_to_name: employeeName === 'Unassigned' ? '' : employeeName,
-      status: nextStatus
-    }
+    updateData
   )
 
   return mapLead(result as unknown as AppwriteLeadDocument)
